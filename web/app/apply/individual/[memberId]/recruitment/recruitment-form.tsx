@@ -115,8 +115,11 @@ export const RecruitmentForm: FC<RecruitmentFormProps> = ({
   useEffect(() => {
     if (agentNumber && !localAgentName) {
       void searchAgencies(agentNumber).then(() => {
-        const cached = agencyCacheRef.current.get(agentNumber.toUpperCase()) ?? [];
-        const match = cached.find((agency) => agency.neaRegNo === agentNumber);
+        const cached = agencyCacheRef.current.get(agentNumber.trim().toUpperCase()) ?? [];
+        const match = cached.find(
+          (agency) =>
+            agency.neaRegNo.toLowerCase() === agentNumber.trim().toLowerCase(),
+        );
         if (match) {
           setLocalAgentName(match.agencyName);
         }
@@ -171,7 +174,16 @@ export const RecruitmentForm: FC<RecruitmentFormProps> = ({
     }
 
     agencyDebounceRef.current = setTimeout(() => {
-      void searchAgencies(next);
+      void searchAgencies(next).then(() => {
+        const cached = agencyCacheRef.current.get(next.trim().toUpperCase()) ?? [];
+        const exactMatch = cached.find(
+          (agency) =>
+            agency.neaRegNo.toLowerCase() === next.trim().toLowerCase(),
+        );
+        if (exactMatch) {
+          setLocalAgentName(exactMatch.agencyName);
+        }
+      });
     }, 150);
   };
 
