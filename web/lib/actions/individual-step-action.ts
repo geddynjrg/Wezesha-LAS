@@ -4,15 +4,16 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 
 const nextStep: Record<string, string> = {
-  'next-of-kin': 'recruitment',
+  guarantor: 'recruitment',
   recruitment: 'budget',
   budget: 'bank',
+  bank: 'credit-history',
   'credit-history': 'signature',
   signature: 'tripartite',
 };
 
 const progressMap: Record<string, number> = {
-  'next-of-kin': 3,
+  guarantor: 3,
   recruitment: 4,
   budget: 5,
   bank: 6,
@@ -20,7 +21,7 @@ const progressMap: Record<string, number> = {
   signature: 8,
 };
 
-export async function saveStepAction(
+export async function saveIndividualStepAction(
   memberId: string,
   step: string,
   _prev: unknown,

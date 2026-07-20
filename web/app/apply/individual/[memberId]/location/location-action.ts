@@ -35,5 +35,5 @@ export async function saveLocationAction(
     data: { progress: 3 },
   });
 
-  redirect(`/apply/individual/${memberId}/next-of-kin`);
+  redirect(`/apply/individual/${memberId}/guarantor`);
 }

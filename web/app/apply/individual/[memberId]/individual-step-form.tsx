@@ -9,8 +9,7 @@ import { FormCard } from '@workspace/ui/components/uwezo/form-card';
 import type { FC } from 'react';
 
 const steps: Record<string, { title: string; prev: string; fieldLabel: string }> = {
-  'next-of-kin': { title: 'Next of Kin', prev: 'location', fieldLabel: 'Next of kin details' },
-  recruitment: { title: 'Recruitment Details', prev: 'next-of-kin', fieldLabel: 'Recruitment agency details' },
+  recruitment: { title: 'Recruitment Details', prev: 'guarantor', fieldLabel: 'Recruitment agency details' },
   budget: { title: 'Budget Breakdown', prev: 'recruitment', fieldLabel: 'Budget item description' },
   bank: { title: 'Bank Account Details', prev: 'budget', fieldLabel: 'Bank account number' },
   'credit-history': { title: 'Credit History', prev: 'bank', fieldLabel: 'Previous lender' },

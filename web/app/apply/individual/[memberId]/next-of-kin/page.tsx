@@ -1,6 +1,10 @@
-import { IndividualStepForm } from '../individual-step-form';
+import { redirect } from 'next/navigation';
 
-export default async function NextOfKinPage({ params }: { params: Promise<{ memberId: string }> }) {
+export default async function NextOfKinRedirectPage({
+  params,
+}: {
+  params: Promise<{ memberId: string }>;
+}) {
   const { memberId } = await params;
-  return <IndividualStepForm memberId={memberId} step="next-of-kin" />;
+  redirect(`/apply/individual/${memberId}/guarantor`);
 }
