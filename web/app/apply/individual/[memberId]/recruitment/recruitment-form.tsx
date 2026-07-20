@@ -30,6 +30,13 @@ const FALLBACK_RATES: Record<string, number> = {
   RUB: 1.77,
 };
 
+/** Extract NEA reg no when SearchInput passes the full "REG - NAME" label. */
+function toAgentRegNo(value: string): string {
+  const trimmed = value.trim();
+  const separatorIndex = trimmed.indexOf(' - ');
+  return separatorIndex === -1 ? trimmed : trimmed.slice(0, separatorIndex).trim();
+}
+
 const EXCHANGE_API_KEY = 'cd6b57d8e1c923a0077a5f72';
 
 interface RecruitmentFormProps {
@@ -166,7 +173,7 @@ export const RecruitmentForm: FC<RecruitmentFormProps> = ({
   }, [currency, monthlyRemuneration]);
 
   const handleAgentNumberChange = (value: string | undefined) => {
-    const next = value ?? '';
+    const next = toAgentRegNo(value ?? '');
     setAgentNumber(next);
 
     if (agencyDebounceRef.current) {
@@ -222,16 +229,21 @@ export const RecruitmentForm: FC<RecruitmentFormProps> = ({
               name="agentNumber"
               label="Agent Number (NEA)"
               required
-              control={() => (
-                <SearchInput
-                  defaultValue={defaultValues?.agentNumber}
-                  placeholder="Start typing agent number..."
-                  options={agencySearchOptions}
-                  isLoading={isSearchingAgencies}
-                  onValueChange={handleAgentNumberChange}
-                  onValueSelect={handleAgentSelect}
-                />
-              )}
+              control={(props) => {
+                const { name: _name, ...fieldProps } = props;
+                return (
+                  <SearchInput
+                    {...fieldProps}
+                    name=""
+                    defaultValue={defaultValues?.agentNumber}
+                    placeholder="e.g.: RA/2022/11/59 - EPIC MANPOWER LIMITED"
+                    options={agencySearchOptions}
+                    isLoading={isSearchingAgencies}
+                    onValueChange={handleAgentNumberChange}
+                    onValueSelect={handleAgentSelect}
+                  />
+                );
+              }}
             />
 
             <ReadOnlyDisplay
