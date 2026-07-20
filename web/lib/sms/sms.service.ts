@@ -1,9 +1,16 @@
 import { normalizeKenyanPhoneForApi } from '@/lib/phone/kenyan-phone';
 
 const SMS_API_URL =
-  process.env.SMS_API_URL ?? 'https://sms.ebisclouderp.com/api/sms/sendsms';
-const SMS_API_KEY = process.env.SMS_API_KEY ?? '';
-const SMS_SHORTCODE = process.env.SMS_SHORTCODE ?? 'Uwezo Fund';
+  process.env.SMS_API_URL ??
+  process.env.EBISCLOUD_SMS_API_URL ??
+  'https://sms.ebisclouderp.com/api/sms/sendsms';
+const SMS_API_KEY =
+  process.env.SMS_API_KEY ?? process.env.EBISCLOUD_SMS_API_KEY ?? '';
+const SMS_SHORTCODE =
+  process.env.SMS_SHORTCODE ?? process.env.EBISCLOUD_SMS_SHORTCODE ?? 'Uwezo Fund';
+const SMS_SERVICE_ID = Number(
+  process.env.SMS_SERVICE_ID ?? process.env.EBISCLOUD_SMS_SERVICE_ID ?? '0',
+);
 
 /** @deprecated Use normalizeKenyanPhoneForApi from @/lib/phone/kenyan-phone */
 export function formatKenyanPhoneNumber(phone: string): string {
@@ -47,7 +54,7 @@ export async function sendSms(mobile: string, message: string): Promise<SendSmsR
 
   const requestBody = {
     api_key: SMS_API_KEY,
-    service_id: 0,
+    service_id: SMS_SERVICE_ID,
     mobile: normalizedMobile,
     response_type: 'json',
     shortcode: SMS_SHORTCODE,
