@@ -1,18 +1,13 @@
+import { normalizeKenyanPhoneForApi } from '@/lib/phone/kenyan-phone';
+
 const SMS_API_URL =
   process.env.SMS_API_URL ?? 'https://sms.ebisclouderp.com/api/sms/sendsms';
 const SMS_API_KEY = process.env.SMS_API_KEY ?? '';
 const SMS_SHORTCODE = process.env.SMS_SHORTCODE ?? 'Uwezo Fund';
 
+/** @deprecated Use normalizeKenyanPhoneForApi from @/lib/phone/kenyan-phone */
 export function formatKenyanPhoneNumber(phone: string): string {
-  let cleaned = phone.replace(/\D/g, '');
-
-  if (cleaned.startsWith('0')) {
-    cleaned = `254${cleaned.substring(1)}`;
-  } else if (cleaned.length === 9) {
-    cleaned = `254${cleaned}`;
-  }
-
-  return cleaned;
+  return normalizeKenyanPhoneForApi(phone);
 }
 
 export function generateOtpCode(): string {
@@ -39,16 +34,21 @@ interface SendSmsResult {
 }
 
 export async function sendSms(mobile: string, message: string): Promise<SendSmsResult> {
+  const normalizedMobile = normalizeKenyanPhoneForApi(mobile);
+
   if (!SMS_API_KEY) {
-    console.warn('[SMS] SMS_API_KEY not configured — OTP logged for development only');
-    console.info(`[SMS] To ${mobile}: ${message}`);
-    return { success: true };
+    console.warn('[SMS] SMS_API_KEY not configured — SMS not sent');
+    console.info(`[SMS] Would send to ${normalizedMobile}: ${message}`);
+    return {
+      success: false,
+      error: 'SMS service is not configured. Please contact support.',
+    };
   }
 
   const requestBody = {
     api_key: SMS_API_KEY,
     service_id: 0,
-    mobile: formatKenyanPhoneNumber(mobile),
+    mobile: normalizedMobile,
     response_type: 'json',
     shortcode: SMS_SHORTCODE,
     message,

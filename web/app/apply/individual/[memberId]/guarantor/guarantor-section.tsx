@@ -1,6 +1,7 @@
 'use client';
 
 import { FormField } from '@/components/form-field';
+import { KenyanPhoneInput } from '@/components/kenyan-phone-input';
 import {
   GENDER_OPTIONS,
   type GuarantorFieldsInput,
@@ -272,13 +273,18 @@ export const GuarantorSection: FC<GuarantorSectionProps> = ({
           defaultValue={defaultValues?.subLocation}
         />
 
-        <FormField
+        <Field
+          state={state}
           name={field('phone')}
           label="Mobile Phone (for OTP)"
           required
-          state={state}
-          defaultValue={defaultValues?.phone}
           className="md:col-span-2"
+          control={(props) => (
+            <KenyanPhoneInput
+              {...props}
+              defaultValue={defaultValues?.phone ?? props.defaultValue}
+            />
+          )}
         />
       </div>
 

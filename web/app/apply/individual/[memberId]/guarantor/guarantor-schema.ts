@@ -1,6 +1,17 @@
 import { z } from 'zod';
+import {
+  formatKenyanPhoneForDisplay,
+  isValidKenyanMobile,
+  normalizeKenyanPhoneForApi,
+} from '@/lib/phone/kenyan-phone';
 
 export const GENDER_OPTIONS = ['Male', 'Female'] as const;
+
+const kenyanPhoneSchema = z
+  .string()
+  .min(9, 'Phone number is required')
+  .transform((value) => normalizeKenyanPhoneForApi(value))
+  .refine(isValidKenyanMobile, 'Enter a valid Kenyan mobile number (e.g. 07XX XXX XXX)');
 
 export const guarantorFieldsSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -12,7 +23,7 @@ export const guarantorFieldsSchema = z.object({
   location: z.string().optional(),
   subLocation: z.string().optional(),
   nationalId: z.string().min(1, 'National ID is required'),
-  phone: z.string().min(9, 'Phone number is required'),
+  phone: kenyanPhoneSchema,
 });
 
 export const guarantorFormSchema = z.object({
@@ -31,7 +42,7 @@ const flatGuarantorFields = (prefix: 'guarantor1' | 'guarantor2') =>
     [`${prefix}_location`]: z.string().optional(),
     [`${prefix}_subLocation`]: z.string().optional(),
     [`${prefix}_nationalId`]: z.string().min(1, 'National ID is required'),
-    [`${prefix}_phone`]: z.string().min(9, 'Phone number is required'),
+    [`${prefix}_phone`]: kenyanPhoneSchema,
   });
 
 export const guarantorFlatFormSchema = flatGuarantorFields('guarantor1').merge(
@@ -96,6 +107,6 @@ export function guarantorToFormDefaults(
     [`${prefix}location`]: guarantor.location ?? undefined,
     [`${prefix}subLocation`]: guarantor.subLocation ?? undefined,
     [`${prefix}nationalId`]: guarantor.nationalId,
-    [`${prefix}phone`]: guarantor.phone,
+    [`${prefix}phone`]: formatKenyanPhoneForDisplay(guarantor.phone),
   };
 }

@@ -14,6 +14,7 @@ import {
   isOtpExpired,
   sendSms,
 } from '@/lib/sms/sms.service';
+import { formatKenyanPhoneForDisplay } from '@/lib/phone/kenyan-phone';
 import { redirect } from 'next/navigation';
 
 function formatLoanAmount(amount: unknown): string {
@@ -122,7 +123,7 @@ export async function sendGuarantorOtpAction(
     success: true as const,
     guarantorNumber,
     action: 'sendOtp' as const,
-    message: `OTP sent to ${parsed.data.name} at ${parsed.data.phone}. Ask them to share the code with you.`,
+    message: `OTP sent to ${parsed.data.name} at ${formatKenyanPhoneForDisplay(parsed.data.phone)}. Ask them to share the code with you.`,
     values: raw,
   };
 }
