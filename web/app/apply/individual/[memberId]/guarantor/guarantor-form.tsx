@@ -52,6 +52,7 @@ export const GuarantorForm: FC<GuarantorFormProps> = ({
   });
 
   const [otpFeedback, setOtpFeedback] = useState<OtpFeedback | null>(null);
+  const [otpFieldErrors, setOtpFieldErrors] = useState<Record<string, string[]>>({});
   const [isSendingOtp, startSendOtp] = useTransition();
   const [isVerifyingOtp, startVerifyOtp] = useTransition();
   const [activeOtpAction, setActiveOtpAction] = useState<{
@@ -65,6 +66,18 @@ export const GuarantorForm: FC<GuarantorFormProps> = ({
     return new FormData(form);
   };
 
+  const sectionState = (guarantorNumber: 1 | 2) => ({
+    ...state,
+    errors: {
+      ...state?.errors,
+      ...Object.fromEntries(
+        Object.entries(otpFieldErrors).filter(([key]) =>
+          key.startsWith(`guarantor${guarantorNumber}_`),
+        ),
+      ),
+    },
+  });
+
   const handleSendOtp = (guarantorNumber: 1 | 2) => {
     startSendOtp(async () => {
       setActiveOtpAction({ guarantorNumber, type: 'send' });
@@ -75,6 +88,25 @@ export const GuarantorForm: FC<GuarantorFormProps> = ({
         message: result.message ?? '',
         success: result.success,
       });
+
+      if ('errors' in result && result.errors) {
+        setOtpFieldErrors((current) => {
+          const cleared = Object.fromEntries(
+            Object.entries(current).filter(
+              ([key]) => !key.startsWith(`guarantor${guarantorNumber}_`),
+            ),
+          );
+          return { ...cleared, ...result.errors };
+        });
+      } else {
+        setOtpFieldErrors((current) =>
+          Object.fromEntries(
+            Object.entries(current).filter(
+              ([key]) => !key.startsWith(`guarantor${guarantorNumber}_`),
+            ),
+          ),
+        );
+      }
 
       if (result.success) {
         const update = { otpVerified: false, otpStatus: 'SENT' };
@@ -120,7 +152,7 @@ export const GuarantorForm: FC<GuarantorFormProps> = ({
               guarantorNumber={1}
               countyOptions={countyOptions}
               defaultValues={guarantor1}
-              state={state}
+              state={sectionState(1)}
               sectionState={g1State}
               feedbackMessage={
                 otpFeedback?.guarantorNumber === 1 ? otpFeedback.message : undefined
@@ -146,7 +178,7 @@ export const GuarantorForm: FC<GuarantorFormProps> = ({
               guarantorNumber={2}
               countyOptions={countyOptions}
               defaultValues={guarantor2}
-              state={state}
+              state={sectionState(2)}
               sectionState={g2State}
               feedbackMessage={
                 otpFeedback?.guarantorNumber === 2 ? otpFeedback.message : undefined

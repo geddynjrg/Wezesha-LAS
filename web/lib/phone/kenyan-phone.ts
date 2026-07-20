@@ -57,7 +57,7 @@ export function isValidKenyanMobile(phone: string): boolean {
     return false;
   }
 
-  const localPrefix = `0${normalized.slice(3, 6)}`;
+  const localPrefix = `0${normalized.slice(3, 5)}`;
   return KENYAN_MOBILE_PREFIXES.has(localPrefix);
 }
 

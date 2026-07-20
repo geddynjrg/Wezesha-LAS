@@ -69,12 +69,21 @@ export async function sendGuarantorOtpAction(
   const parsed = guarantorFieldsSchema.safeParse(extractGuarantorInput(raw, guarantorNumber));
 
   if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    const errors: Record<string, string[]> = {};
+
+    for (const [key, value] of Object.entries(fieldErrors)) {
+      errors[`guarantor${guarantorNumber}_${key}`] = value ?? [];
+    }
+
+    const firstError = Object.values(fieldErrors).flat()[0];
+
     return {
       success: false as const,
       guarantorNumber,
       action: 'sendOtp' as const,
-      errors: parsed.error.flatten().fieldErrors,
-      message: 'Please complete all guarantor fields before sending OTP.',
+      errors,
+      message: firstError ?? 'Please complete all guarantor fields before sending OTP.',
       values: raw,
     };
   }
