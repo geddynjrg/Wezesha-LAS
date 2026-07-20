@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { generateAcknowledgmentNumber } from '@/lib/constants/majuu-steps';
-import { ApplicationPhase, ApplicationStatus } from '@/generated/prisma';
+import { getIndividualAwardAmount } from '@/lib/loan/award-amount';
+import { ApplicationPhase, ApplicationStatus, Prisma } from '@/generated/prisma';
 
 export async function createGroupApplication() {
   let acknowledgmentNumber = generateAcknowledgmentNumber();
@@ -117,6 +118,16 @@ export async function getOrCreateIndividualApplication(memberId: string) {
 }
 
 export async function submitIndividualApplication(id: string) {
+  const existing = await prisma.individualApplication.findUniqueOrThrow({
+    where: { id },
+    include: { member: true, budgetItems: true },
+  });
+
+  const awardAmount = getIndividualAwardAmount(
+    existing.member.amount,
+    existing.budgetItems,
+  );
+
   const application = await prisma.individualApplication.update({
     where: { id },
     data: {
@@ -124,6 +135,7 @@ export async function submitIndividualApplication(id: string) {
       progress: 9,
       submittedAt: new Date(),
       tripartiteAccepted: true,
+      awardAmount: new Prisma.Decimal(awardAmount),
     },
     include: { member: true },
   });

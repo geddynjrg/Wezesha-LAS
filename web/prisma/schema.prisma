@@ -162,6 +162,7 @@ model IndividualApplication {
   acknowledgmentNumber String            @unique
   status               ApplicationStatus @default(DRAFT)
   progress             Int               @default(1)
+  awardAmount          Decimal?          @db.Decimal(12, 2)
   submittedAt          DateTime?
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
