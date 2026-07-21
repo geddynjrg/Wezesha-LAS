@@ -82,6 +82,7 @@ export async function getIndividualApplication(memberId: string) {
       creditHistory: true,
       creditHistoryLoans: true,
       signature: true,
+      tripartite: true,
       documents: true,
     },
   });

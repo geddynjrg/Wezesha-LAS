@@ -176,6 +176,7 @@ model IndividualApplication {
   creditHistory        CreditHistoryData?
   creditHistoryLoans   CreditHistoryLoan[]
   signature            SignatureData?
+  tripartite           TripartiteData?
   tripartiteAccepted   Boolean           @default(false)
   documents            ApplicationDocument[]
 
@@ -297,6 +298,17 @@ model SignatureData {
   application     IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@map("signature_data")
+}
+
+model TripartiteData {
+  id             String                @id @default(cuid())
+  applicationId  String                @unique
+  migrantName    String
+  idNumber       String
+  passportNumber String
+  application    IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("tripartite_data")
 }
 
 model ApplicationDocument {
