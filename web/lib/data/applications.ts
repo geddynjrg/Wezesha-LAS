@@ -80,6 +80,7 @@ export async function getIndividualApplication(memberId: string) {
       budgetItems: true,
       bankAccount: true,
       creditHistory: true,
+      creditHistoryLoans: true,
       signature: true,
       documents: true,
     },
