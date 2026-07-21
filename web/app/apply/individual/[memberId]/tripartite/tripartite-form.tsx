@@ -17,6 +17,7 @@ interface TripartiteFormProps {
   defaultIdNumber: string;
   defaultPassportNumber: string;
   defaultAccepted?: boolean;
+  migrantSignature?: string | null;
 }
 
 function formatAgreementDate(date: Date) {
@@ -38,6 +39,26 @@ function SignaturePlaceholder({ label }: { label: string }) {
   );
 }
 
+function MigrantSignatureField({ signature }: { signature?: string | null }) {
+  if (!signature) {
+    return <SignaturePlaceholder label="Sign:" />;
+  }
+
+  return (
+    <div className="flex flex-1 flex-wrap items-baseline gap-2">
+      <span className="font-bold">Sign:</span>
+      <div className="flex h-[60px] min-w-[250px] flex-1 items-center border-b border-dotted border-black bg-[#fcfcfc] px-1">
+        {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL from signature pad */}
+        <img
+          src={signature}
+          alt="Migrant worker signature"
+          className="max-h-[55px] max-w-full object-contain object-left"
+        />
+      </div>
+    </div>
+  );
+}
+
 function DatePlaceholder({ date }: { date: string }) {
   return (
     <div className="flex flex-1 items-baseline gap-2">
@@ -53,6 +74,7 @@ export const TripartiteForm: FC<TripartiteFormProps> = ({
   defaultIdNumber,
   defaultPassportNumber,
   defaultAccepted = false,
+  migrantSignature = null,
 }) => {
   const currentDate = useMemo(() => formatAgreementDate(new Date()), []);
   const [migrantName, setMigrantName] = useState(defaultMigrantName);
@@ -247,7 +269,7 @@ export const TripartiteForm: FC<TripartiteFormProps> = ({
             </ol>
 
             <div className="sig-row mt-8 flex flex-wrap justify-between gap-4">
-              <SignaturePlaceholder label="Sign:" />
+              <MigrantSignatureField signature={migrantSignature} />
               <DatePlaceholder date={currentDate} />
             </div>
 

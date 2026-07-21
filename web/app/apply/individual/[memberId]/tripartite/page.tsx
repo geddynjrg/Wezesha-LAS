@@ -20,6 +20,7 @@ export default async function TripartitePage({ params }: { params: Promise<{ mem
       defaultIdNumber={defaults?.idNumber ?? app.member.idNo}
       defaultPassportNumber={defaults?.passportNumber ?? app.member.passportNo ?? ''}
       defaultAccepted={defaults?.tripartiteAccepted ?? false}
+      migrantSignature={app.signature?.digitalSignature ?? null}
     />
   );
 }
