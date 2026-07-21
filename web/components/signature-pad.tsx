@@ -2,8 +2,21 @@
 
 import { Button } from '@workspace/ui/components/button';
 import { cn } from '@workspace/ui/lib/utils';
+import dynamic from 'next/dynamic';
 import { type FC, useEffect, useRef } from 'react';
-import SignatureCanvas from 'react-signature-canvas';
+import type SignatureCanvasType from 'react-signature-canvas';
+
+const SignatureCanvas = dynamic(
+  () => import('react-signature-canvas').then((mod) => mod.default),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[180px] items-center justify-center rounded-xl border border-neutral-300 bg-neutral-50 text-sm text-neutral-500">
+        Loading signature pad…
+      </div>
+    ),
+  },
+);
 
 interface SignaturePadProps {
   defaultSignature?: string | null;
@@ -16,7 +29,7 @@ export const SignaturePad: FC<SignaturePadProps> = ({
   onChange,
   className,
 }) => {
-  const canvasRef = useRef<SignatureCanvas>(null);
+  const canvasRef = useRef<SignatureCanvasType | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
 
