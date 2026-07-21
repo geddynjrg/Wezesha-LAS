@@ -293,8 +293,10 @@ export const TripartiteForm: FC<TripartiteFormProps> = ({
                 className="mt-1 size-4 accent-primary"
               />
               <span>
-                I have read and accept the tripartite agreement between the member, recruitment
-                agency, and Uwezo Fund for the Wezesha Majuu programme.
+                I have read and accept the tripartite agreement between the Ministry of Labour and
+                Social Protection, State Department for Labour and Skills Development; the Ministry
+                of Cooperatives and MSMEs Development, State Department of MSMEs Development; and
+                the labour migrant for the Wezesha Majuu programme.
               </span>
             </label>
             {state.errors?.tripartiteAccepted ? (
