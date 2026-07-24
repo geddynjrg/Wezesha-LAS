@@ -1,0 +1,128 @@
+{
+  "Form": {
+    "errors": {
+      "invalid": "Invalid",
+      "required": "This field is required",
+      "string_too_small": "Value must be at least {minimum} characters",
+      "string_too_large": "Value must be at most {maximum} characters",
+      "date_too_small": "Date must be at least {minimum}",
+      "date_too_large": "Date must be at most {maximum}",
+      "invalid_date": "Invalid date",
+      "number_too_small": "Value must be at least {minimum}",
+      "number_too_large": "Value must be at most {maximum}",
+      "array_too_large": "Maximum of {maximum} items allowed",
+      "invalid_union": "Please choose a valid option",
+      "file_too_large": "Max file size is {maximum}MB",
+      "password_mismatch": "Passwords do not match"
+    }
+  },
+  "Common": {
+    "menu": "Menu",
+    "login": "Log in",
+    "logout": "Log out",
+    "myProfile": "My Profile",
+    "myApplications": "My Applications",
+    "signOut": "Sign out",
+    "account": "Account",
+    "closeMenu": "Close menu",
+    "home": "Home",
+    "dashboard": "My applications",
+    "apply": "Apply",
+    "startApplication": "Start application",
+    "individualApplication": "Individual application",
+    "trackStatus": "Track status",
+    "helpAndSupport": "Help & Support",
+    "eligibilityCriteria": "Eligibility criteria",
+    "howToApply": "How to apply",
+    "next": "Next",
+    "back": "Back",
+    "submit": "Submit",
+    "save": "Save & Continue"
+  },
+  "LoginPage": {
+    "title": "Get started",
+    "description": "Log in or create an account to apply for the Wezesha Majuu loan.",
+    "flowDescription": "The application will be <bold>saved at each step</bold> and you can return to complete it by <bold>logging in.</bold>",
+    "submittedDescription": "Once submitted, you can track the application progress <bold>through your account.</bold>",
+    "doNotHaveAccount": "Don't have an account?",
+    "email": "E-mail",
+    "password": "Password",
+    "login": "Log in",
+    "signUp": "Sign up",
+    "or": "Or",
+    "loginFormHeading": "Login Form",
+    "otpSent": "Code sent to your phone",
+    "unknownError": "Unknown error",
+    "invalidEmail": "Invalid email address",
+    "passwordRequired": "Password is required",
+    "phoneNumberRequired": "Phone number is required",
+    "invalidPhoneFormat": "Please enter a valid phone number (9 digits)",
+    "phoneNumber": "Phone Number",
+    "sendOtp": "Send code",
+    "changePhoneNumber": "Change phone number",
+    "otpCode": "Login code",
+    "enterOtpSentTo": "Enter the 6-digit code sent to {phoneNumber}",
+    "invalidOtpFormat": "Invalid OTP code format"
+  },
+  "SignUpPage": {
+    "title": "Create an Account",
+    "description": "Fill in the details below to create your account.",
+    "email": "E-mail",
+    "password": "Password",
+    "passwordConfirm": "Confirm password",
+    "signUp": "Sign up",
+    "alreadyHaveAccount": "Already have an account?",
+    "login": "Log in",
+    "or": "Or",
+    "registerThroughECitizen": "Register through eCitizen"
+  },
+  "Footer": {
+    "usefulLinks": "Useful Links",
+    "quickContacts": "Quick Contacts"
+  },
+  "FrontPage": {
+    "title": "Wezesha <title>Majuu</title><lineBreak/><subTitle>Labour Mobility Loan Programme</subTitle>",
+    "description": "Apply for group and individual loans to support <underline>labour mobility</underline> for registered youth groups.",
+    "imageDescription": "Wezesha Majuu programme",
+    "criteria": {
+      "title": "Eligibility Criteria",
+      "one": "Self-help groups registered with the Department of Social Services or Registrar of Societies.",
+      "two": "Groups must hold a valid registration certificate and a bank account in the group name.",
+      "three": "Groups should include youth, women, and persons with disabilities.",
+      "four": "The group chair completes the group application first.",
+      "five": "Each listed member completes an individual application after group submission.",
+      "six": "Incomplete individual applications may delay group processing."
+    }
+  },
+  "ApplyPage": {
+    "title": "Start Application",
+    "groupDescription": "Group chair or authorized representative completes the group loan application.",
+    "individualDescription": "Members complete individual details after the group application is submitted.",
+    "startGroup": "Start Group Application",
+    "trackStatus": "Track Application Status"
+  },
+  "DashboardPage": {
+    "myApplications": "My Applications",
+    "newApplication": "New application",
+    "group": "Group",
+    "groupNamePending": "Group name not yet provided",
+    "continueFillingApplication": "Continue filling application",
+    "viewApplication": "View application",
+    "memberProgress": "{submitted} of {total} members submitted individual applications",
+    "emptyState": {
+      "title": "No applications yet",
+      "description": "Start a group application to receive your UWZ acknowledgment number and begin the Wezesha Majuu loan process.",
+      "applyButton": "Start application"
+    },
+    "status": {
+      "title": "Status",
+      "draft": "Draft — continue filling the group application",
+      "groupSubmitted": "Group application submitted — members can complete individual applications",
+      "individualInProgress": "Individual applications in progress",
+      "submitted": "Application submitted — awaiting review",
+      "underReview": "Application under review",
+      "approved": "Application approved",
+      "rejected": "Application rejected"
+    }
+  }
+}

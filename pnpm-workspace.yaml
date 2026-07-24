@@ -1,0 +1,15 @@
+packages:
+  - packages/*
+  - web
+
+ignoredBuiltDependencies:
+  - core-js-pure
+  - esbuild
+  - unrs-resolver
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@tailwindcss/oxide'
+  - prisma
+  - sharp

@@ -1,0 +1,14 @@
+{
+  "name": "majuu-portal",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter majuu-portal-web dev",
+    "build": "pnpm --filter majuu-portal-web build",
+    "start": "pnpm --filter majuu-portal-web start",
+    "lint": "pnpm --filter majuu-portal-web lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
