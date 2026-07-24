@@ -6,6 +6,7 @@ import { saveIndividualInformationAction } from './individual-information-action
 import {
   EDUCATION_LEVEL_OPTIONS,
   GENDER_OPTIONS,
+  type IndividualInformationMemberDefaults,
   individualInformationSchema,
   resolveEducationLevelForForm,
 } from './individual-information-schema';
@@ -18,24 +19,11 @@ import { Select } from '@workspace/ui/components/select';
 import { FormCard } from '@workspace/ui/components/uwezo/form-card';
 import { useForm } from '@workspace/ui/hooks/use-form';
 import { cn } from '@workspace/ui/lib/utils';
-import { type FC, useMemo, useState } from 'react';
+import { type FC, useEffect, useMemo, useState } from 'react';
 
 interface IndividualInformationFormProps {
   memberId: string;
-  member: {
-    name: string;
-    idNo: string;
-    gender?: string | null;
-    dob?: Date | null;
-    kraPin?: string | null;
-    educationLevel?: string | null;
-    mobile: string;
-    email?: string | null;
-    poBox?: string | null;
-    postalCode?: string | null;
-    town?: string | null;
-    dependants?: number | null;
-  };
+  member: IndividualInformationMemberDefaults;
 }
 
 const ReadOnlyDisplay: FC<{ label: string; value: string }> = ({ label, value }) => (
@@ -57,15 +45,15 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
   const defaultValues = useMemo(
     () => ({
       gender: GENDER_OPTIONS.includes(member.gender as (typeof GENDER_OPTIONS)[number])
-        ? member.gender
+        ? (member.gender as (typeof GENDER_OPTIONS)[number])
         : undefined,
-      dob: member.dob?.toISOString().slice(0, 10) ?? '',
-      kraPin: member.kraPin ?? '',
+      dob: member.dob,
+      kraPin: member.kraPin,
       educationLevel: educationDefaults.educationLevel || undefined,
       educationLevelOther: educationDefaults.educationLevelOther,
-      poBox: member.poBox ?? '',
-      postalCode: member.postalCode ?? '',
-      town: member.town ?? '',
+      poBox: member.poBox,
+      postalCode: member.postalCode,
+      town: member.town,
       dependants: member.dependants?.toString() ?? '',
     }),
     [educationDefaults, member],
@@ -78,9 +66,20 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
     defaultValues,
   );
 
+  const formValues = useMemo(
+    () => ({ ...defaultValues, ...state.values }),
+    [defaultValues, state.values],
+  );
+
   const [educationLevel, setEducationLevel] = useState(
     educationDefaults.educationLevel,
   );
+
+  useEffect(() => {
+    if (typeof formValues.educationLevel === 'string' && formValues.educationLevel) {
+      setEducationLevel(formValues.educationLevel);
+    }
+  }, [formValues.educationLevel]);
 
   return (
     <Form action={formAction} state={state}>
@@ -99,7 +98,9 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
                 <RadioGroup
                   {...props}
                   name="gender"
-                  defaultValue={member.gender ?? undefined}
+                  defaultValue={
+                    typeof formValues.gender === 'string' ? formValues.gender : undefined
+                  }
                   orientation="horizontal"
                   options={GENDER_OPTIONS.map((value) => ({
                     label: value,
@@ -114,13 +115,13 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
               label="Date of Birth"
               type="date"
               state={state}
-              defaultValue={defaultValues.dob}
+              defaultValue={formValues.dob}
             />
             <FormField
               name="kraPin"
               label="KRA PIN"
               state={state}
-              defaultValue={defaultValues.kraPin}
+              defaultValue={formValues.kraPin}
             />
 
             <Field
@@ -133,7 +134,11 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
                   {...props}
                   name="educationLevel"
                   placeholder="Select education level"
-                  defaultValue={educationDefaults.educationLevel || undefined}
+                  defaultValue={
+                    typeof formValues.educationLevel === 'string'
+                      ? formValues.educationLevel
+                      : undefined
+                  }
                   options={EDUCATION_LEVEL_OPTIONS.map((value) => ({
                     label: value,
                     value,
@@ -151,43 +156,50 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
                 label="Specify Education Level"
                 required
                 state={state}
-                defaultValue={defaultValues.educationLevelOther}
+                defaultValue={formValues.educationLevelOther}
                 className="md:col-span-2"
               />
             )}
 
             <ReadOnlyDisplay label="Mobile" value={member.mobile} />
-            <ReadOnlyDisplay label="Email" value={member.email ?? ''} />
+            <ReadOnlyDisplay label="Email" value={member.email} />
+            <ReadOnlyDisplay label="Passport No" value={member.passportNo} />
             <FormField
               name="poBox"
               label="P.O. Box"
               state={state}
-              defaultValue={defaultValues.poBox}
+              defaultValue={formValues.poBox}
             />
             <FormField
               name="postalCode"
               label="Postal Code"
               state={state}
-              defaultValue={defaultValues.postalCode}
+              defaultValue={formValues.postalCode}
             />
             <FormField
               name="town"
               label="Town"
               state={state}
-              defaultValue={defaultValues.town}
+              defaultValue={formValues.town}
             />
             <FormField
               name="dependants"
               label="Dependants"
               type="number"
               state={state}
-              defaultValue={defaultValues.dependants}
+              defaultValue={
+                formValues.dependants != null ? String(formValues.dependants) : undefined
+              }
             />
           </div>
         </FormCard>
       </Container>
 
-      <ApplyFormActionBar disabled={isPending} submitLabel="Save & Continue" />
+      <ApplyFormActionBar
+        disabled={isPending}
+        prevUrl="/apply/individual"
+        submitLabel="Save & Continue"
+      />
     </Form>
   );
 };

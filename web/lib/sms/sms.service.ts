@@ -21,6 +21,28 @@ export function generateOtpCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+export function buildMemberConsentOtpMessage({
+  memberName,
+  loanAmount,
+  otpCode,
+}: {
+  memberName: string;
+  loanAmount: string;
+  otpCode: string;
+}): string {
+  return `Dear ${memberName}, you have been allocated KES ${loanAmount} for Uwezo Fund Wezesha Majuu loan. Your consent code is: ${otpCode}. Share this code with your group contact person if you consent to this loan amount.`;
+}
+
+export function buildGuaranteeConsentMessage({
+  memberName,
+  groupName,
+}: {
+  memberName: string;
+  groupName: string;
+}): string {
+  return `Dear ${memberName}, you are requested to consent to the Uwezo Fund Wezesha Majuu loan repayment commitment for group ${groupName}. Please contact your group leader to confirm your guarantee.`;
+}
+
 export function buildGuarantorOtpMessage({
   guarantorName,
   applicantName,
@@ -35,13 +57,117 @@ export function buildGuarantorOtpMessage({
   return `You will guarantee ${applicantName} for a Uwezo Fund Wezesha Majuu Loan worth KES ${loanAmount}. Your consent code is ${otpCode}. Share this code with ${applicantName} if you consent to guarantee them for the loan.`;
 }
 
+export function buildGroupSubmissionConfirmationMessage({
+  memberName,
+  groupName,
+  acknowledgmentNumber,
+  applyLink,
+}: {
+  memberName: string;
+  groupName: string;
+  acknowledgmentNumber: string;
+  applyLink: string;
+}): string {
+  return `Dear ${memberName}, the Uwezo Fund Wezesha Majuu group loan application for ${groupName} (Ref: ${acknowledgmentNumber}) has been submitted. Complete your individual application here: ${applyLink}`;
+}
+
 interface SendSmsResult {
   success: boolean;
   error?: string;
 }
 
+const EBIS_RESPONSE_SUCCESS = '1000';
+
+type EbisLegacyResponse = {
+  status_code?: string;
+  status_desc?: string;
+};
+
+type EbisApiResponse = {
+  status?: string;
+  message?: string;
+  error?: string;
+  data?: {
+    message_id?: string;
+    cost?: number;
+  };
+  details?: EbisLegacyResponse & {
+    data?: EbisLegacyResponse;
+    response?: string;
+  };
+};
+
+function parseEbisApiResponse(
+  statusCode: number,
+  responseBody: string,
+): SendSmsResult {
+  let jsonData: EbisApiResponse | EbisLegacyResponse[] | null = null;
+
+  try {
+    jsonData = JSON.parse(responseBody) as EbisApiResponse | EbisLegacyResponse[];
+  } catch {
+    jsonData = null;
+  }
+
+  if (statusCode === 200) {
+    if (jsonData && !Array.isArray(jsonData) && jsonData.status === EBIS_RESPONSE_SUCCESS) {
+      return { success: true };
+    }
+
+    if (Array.isArray(jsonData)) {
+      const legacyResult = jsonData[0];
+      if (
+        legacyResult?.status_code === EBIS_RESPONSE_SUCCESS ||
+        legacyResult?.status_code === '1'
+      ) {
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        error: legacyResult?.status_desc ?? 'Failed to send SMS',
+      };
+    }
+
+    if (jsonData && !Array.isArray(jsonData)) {
+      return {
+        success: false,
+        error: (jsonData.message ?? jsonData.error ?? responseBody) || 'Failed to send SMS',
+      };
+    }
+
+    if (/success|sent/i.test(responseBody)) {
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: responseBody || 'Empty response from SMS API',
+    };
+  }
+
+  if (jsonData && !Array.isArray(jsonData)) {
+    const details = jsonData.details?.data ?? jsonData.details;
+    const detailMessage = details?.status_desc;
+
+    return {
+      success: false,
+      error:
+        detailMessage ??
+        jsonData.message ??
+        jsonData.error ??
+        `HTTP error ${statusCode}`,
+    };
+  }
+
+  return {
+    success: false,
+    error: responseBody || `HTTP error ${statusCode}`,
+  };
+}
+
 export async function sendSms(mobile: string, message: string): Promise<SendSmsResult> {
-  const normalizedMobile = normalizeKenyanPhoneForApi(mobile);
+  const normalizedMobile = normalizeKenyanPhoneForApi(mobile).replace(/^\+/, '');
 
   if (!SMS_API_KEY) {
     console.warn('[SMS] SMS_API_KEY not configured — SMS not sent');
@@ -64,24 +190,24 @@ export async function sendSms(mobile: string, message: string): Promise<SendSmsR
   try {
     const response = await fetch(SMS_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Majuu-Portal/1.0',
+      },
       body: JSON.stringify(requestBody),
     });
 
-    const data = (await response.json()) as Array<{
-      status_code?: string;
-      status_desc?: string;
-    }>;
+    const responseBody = await response.text();
+    const parsed = parseEbisApiResponse(response.status, responseBody);
 
-    const result = data[0];
-    if (result?.status_code === '1000' || result?.status_code === '1') {
-      return { success: true };
+    if (!parsed.success) {
+      console.error('[SMS] EBIS API error:', {
+        status: response.status,
+        body: responseBody,
+      });
     }
 
-    return {
-      success: false,
-      error: result?.status_desc ?? 'Failed to send SMS',
-    };
+    return parsed;
   } catch (error) {
     return {
       success: false,

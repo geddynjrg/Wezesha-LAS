@@ -1,9 +1,16 @@
+import { buildIndividualApplicationStartUrl } from '@/lib/app-url';
+import { triggerLmsSync } from '@/lib/lms/sync';
 import { prisma } from '@/lib/prisma';
 import { generateAcknowledgmentNumber } from '@/lib/constants/majuu-steps';
 import { getIndividualAwardAmount } from '@/lib/loan/award-amount';
+import { getSessionUserId } from '@/lib/auth/session';
+import {
+  buildGroupSubmissionConfirmationMessage,
+  sendSms,
+} from '@/lib/sms/sms.service';
 import { ApplicationPhase, ApplicationStatus, Prisma } from '@/generated/prisma';
 
-export async function createGroupApplication() {
+async function generateUniqueAcknowledgmentNumber() {
   let acknowledgmentNumber = generateAcknowledgmentNumber();
   let exists = await prisma.groupApplication.findUnique({
     where: { acknowledgmentNumber },
@@ -16,13 +23,57 @@ export async function createGroupApplication() {
     });
   }
 
+  return acknowledgmentNumber;
+}
+
+export async function createGroupApplication(userId: string) {
+  const acknowledgmentNumber = await generateUniqueAcknowledgmentNumber();
+
   return prisma.groupApplication.create({
     data: {
       acknowledgmentNumber,
       status: ApplicationStatus.DRAFT,
       phase: ApplicationPhase.GROUP,
       progress: 1,
+      userId,
     },
+  });
+}
+
+export async function getOrCreateGroupApplication() {
+  const userId = await getSessionUserId();
+  if (!userId) {
+    throw new Error('Authentication required');
+  }
+
+  const existingDraft = await prisma.groupApplication.findFirst({
+    where: {
+      userId,
+      status: ApplicationStatus.DRAFT,
+      phase: ApplicationPhase.GROUP,
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+
+  if (existingDraft) {
+    return existingDraft;
+  }
+
+  return createGroupApplication(userId);
+}
+
+export async function getUserGroupApplications(userId: string) {
+  return prisma.groupApplication.findMany({
+    where: { userId },
+    include: {
+      groupData: true,
+      members: {
+        include: {
+          individualApplication: true,
+        },
+      },
+    },
+    orderBy: { updatedAt: 'desc' },
   });
 }
 
@@ -57,8 +108,45 @@ export async function updateGroupProgress(id: string, progress: number) {
   });
 }
 
+async function notifyGroupMembersOfSubmission(application: {
+  acknowledgmentNumber: string;
+  groupData: { groupName: string } | null;
+  members: Array<{ id: string; name: string; idNo: string; mobile: string }>;
+}) {
+  const groupName = application.groupData?.groupName?.trim() || 'your group';
+  const failures: string[] = [];
+
+  for (const member of application.members) {
+    if (!member.mobile?.trim()) {
+      console.warn(`[SMS] Skipping member ${member.name} — no mobile number`);
+      failures.push(member.name);
+      continue;
+    }
+
+    const applyLink = buildIndividualApplicationStartUrl(member.idNo);
+    const message = buildGroupSubmissionConfirmationMessage({
+      memberName: member.name,
+      groupName,
+      acknowledgmentNumber: application.acknowledgmentNumber,
+      applyLink,
+    });
+
+    const result = await sendSms(member.mobile, message);
+    if (!result.success) {
+      console.error(`[SMS] Failed to notify ${member.name}:`, result.error);
+      failures.push(member.name);
+    }
+  }
+
+  if (failures.length > 0) {
+    console.warn(
+      `[SMS] Group submission notifications failed or skipped for: ${failures.join(', ')}`,
+    );
+  }
+}
+
 export async function submitGroupApplication(id: string) {
-  return prisma.groupApplication.update({
+  const application = await prisma.groupApplication.update({
     where: { id },
     data: {
       status: ApplicationStatus.GROUP_SUBMITTED,
@@ -66,7 +154,28 @@ export async function submitGroupApplication(id: string) {
       progress: 9,
       submittedAt: new Date(),
     },
+    include: {
+      groupData: true,
+      members: true,
+    },
   });
+
+  for (const member of application.members) {
+    try {
+      await getOrCreateIndividualApplication(member.id);
+    } catch (error) {
+      console.error(
+        `[Applications] Failed to create individual application for ${member.name}:`,
+        error,
+      );
+    }
+  }
+
+  await notifyGroupMembersOfSubmission(application);
+
+  void triggerLmsSync(application.acknowledgmentNumber);
+
+  return application;
 }
 
 export async function getIndividualApplication(memberId: string) {
@@ -146,6 +255,15 @@ export async function submitIndividualApplication(id: string) {
     where: { id: application.memberId },
     data: { loanStatus: 'INDIVIDUAL_SUBMITTED' },
   });
+
+  const groupApp = await prisma.groupApplication.findUnique({
+    where: { id: application.member.applicationId },
+    include: { members: true },
+  });
+
+  if (groupApp) {
+    void triggerLmsSync(groupApp.acknowledgmentNumber);
+  }
 
   return application;
 }

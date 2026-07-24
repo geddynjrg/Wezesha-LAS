@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+export const MIN_APPLICANT_AGE = 18;
+
+export const DOB_BELOW_MIN_AGE_MESSAGE = 'The selected date is below 18 years';
+
 export const EDUCATION_LEVEL_OPTIONS = [
   'KCPE',
   'KCSE',
@@ -13,6 +17,86 @@ export type EducationLevelOption = (typeof EDUCATION_LEVEL_OPTIONS)[number];
 export const GENDER_OPTIONS = ['Male', 'Female'] as const;
 
 export type GenderOption = (typeof GENDER_OPTIONS)[number];
+
+export interface IndividualInformationMemberDefaults {
+  name: string;
+  idNo: string;
+  gender: string | null;
+  dob: string;
+  passportNo: string;
+  kraPin: string;
+  educationLevel: string | null;
+  mobile: string;
+  email: string;
+  poBox: string;
+  postalCode: string;
+  town: string;
+  dependants: number | null;
+}
+
+export function formatDateForInput(value?: Date | string | null): string {
+  if (!value) {
+    return '';
+  }
+
+  if (typeof value === 'string') {
+    return value.slice(0, 10);
+  }
+
+  return value.toISOString().slice(0, 10);
+}
+
+export function isAtLeastMinApplicantAge(
+  dob: string,
+  minAge = MIN_APPLICANT_AGE,
+): boolean {
+  const birthDate = new Date(`${dob}T00:00:00`);
+  if (Number.isNaN(birthDate.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age -= 1;
+  }
+
+  return age >= minAge;
+}
+
+export function getIndividualInformationMemberDefaults(member: {
+  name: string;
+  idNo: string;
+  gender?: string | null;
+  dob?: Date | string | null;
+  passportNo?: string | null;
+  kraPin?: string | null;
+  educationLevel?: string | null;
+  mobile: string;
+  email?: string | null;
+  poBox?: string | null;
+  postalCode?: string | null;
+  town?: string | null;
+  dependants?: number | null;
+}): IndividualInformationMemberDefaults {
+  return {
+    name: member.name,
+    idNo: member.idNo,
+    gender: member.gender ?? null,
+    dob: formatDateForInput(member.dob),
+    passportNo: member.passportNo ?? '',
+    kraPin: member.kraPin ?? '',
+    educationLevel: member.educationLevel ?? null,
+    mobile: member.mobile,
+    email: member.email ?? '',
+    poBox: member.poBox ?? '',
+    postalCode: member.postalCode ?? '',
+    town: member.town ?? '',
+    dependants: member.dependants ?? null,
+  };
+}
 
 export const individualInformationSchema = z
   .object({
@@ -34,6 +118,15 @@ export const individualInformationSchema = z
         code: z.ZodIssueCode.custom,
         message: 'Please specify your education level',
         path: ['educationLevelOther'],
+      });
+    }
+
+    const dob = data.dob?.trim();
+    if (dob && !isAtLeastMinApplicantAge(dob)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: DOB_BELOW_MIN_AGE_MESSAGE,
+        path: ['dob'],
       });
     }
   });

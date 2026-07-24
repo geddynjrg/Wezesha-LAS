@@ -12,14 +12,14 @@ export async function saveIndividualInformationAction(
   _prev: unknown,
   formData: FormData,
 ) {
-  const parsed = individualInformationSchema.safeParse(
-    Object.fromEntries(formData.entries()),
-  );
+  const formValues = Object.fromEntries(formData.entries());
+  const parsed = individualInformationSchema.safeParse(formValues);
 
   if (!parsed.success) {
     return {
       success: false as const,
       errors: parsed.error.flatten().fieldErrors,
+      values: formValues,
     };
   }
 

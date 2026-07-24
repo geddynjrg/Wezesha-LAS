@@ -33,3 +33,26 @@ export const FILE_ACCEPT = {
 export function generateAcknowledgmentNumber(prefix = 'UWZ') {
   return `${prefix}-${Date.now()}`;
 }
+
+export function getGroupStepPath(progress: number): string {
+  const stepIndex = Math.max(0, Math.min(progress - 1, GROUP_STEPS.length - 1));
+  return GROUP_STEPS[stepIndex]?.path ?? GROUP_STEPS[0]!.path!;
+}
+
+export function getGroupApplicationUrl(
+  id: string,
+  progress: number,
+  status: string,
+): string {
+  if (status === 'DRAFT') {
+    return `/apply/group/${id}${getGroupStepPath(progress)}`;
+  }
+
+  return `/apply/group/${id}/complete`;
+}
+
+export function getGroupProgressLabel(progress: number): string {
+  const stepIndex = Math.max(0, Math.min(progress - 1, GROUP_STEPS.length - 1));
+  const step = GROUP_STEPS[stepIndex];
+  return step ? `Step ${step.index} of ${GROUP_STEPS.length}: ${step.title}` : '';
+}

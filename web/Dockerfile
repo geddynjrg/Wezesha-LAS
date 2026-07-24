@@ -12,10 +12,12 @@ COPY web/package.json ./web/
 RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
+ARG NEXT_PUBLIC_APP_URL=https://majuu.uwezo.go.ke
 COPY --from=deps /app ./
 COPY web/ ./web/
 RUN cd web && pnpm exec prisma generate --schema=./prisma/schema.prisma
 ENV NODE_ENV=production
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 RUN cd web && pnpm build
 
 FROM base AS production
