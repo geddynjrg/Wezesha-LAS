@@ -3,17 +3,6 @@ import path from 'node:path';
 
 import { titleCaseLabel } from '@/lib/locations/format';
 
-interface LocalityRecord {
-  name: string;
-  county: string;
-}
-
-interface AreaRecord {
-  name: string;
-  locality: string;
-  county: string;
-}
-
 export interface LocationOption {
   label: string;
   value: string;
@@ -24,7 +13,7 @@ const COUNTY_ALIASES: Record<string, string> = {
   'elgeyo/marakwet': 'Elgeyo-Marakwet',
   'elgeyo marakwet': 'Elgeyo-Marakwet',
   "murang'a": "Murang'a",
-  'muranga': "Murang'a",
+  muranga: "Murang'a",
   'taita taveta': 'Taita-Taveta',
   'tharaka - nithi': 'Tharaka-Nithi',
   'tharaka-nithi': 'Tharaka-Nithi',
@@ -33,10 +22,6 @@ const COUNTY_ALIASES: Record<string, string> = {
 
 function normalizeKey(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-function normalizeLocationKey(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 function resolveDatasetCounty(countyName: string): string {
@@ -53,43 +38,29 @@ function readJsonFile<T>(fileName: string): T {
   return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
 }
 
-let localitiesCache: LocalityRecord[] | null = null;
-let areasCache: AreaRecord[] | null = null;
+let wardLocationsCache: Record<string, string[]> | null = null;
+let locationAreasCache: Record<string, string[]> | null = null;
 
-function getLocalities(): LocalityRecord[] {
-  if (!localitiesCache) {
-    localitiesCache = readJsonFile<LocalityRecord[]>('kenya_localities.json');
+function getWardLocationsMap(): Record<string, string[]> {
+  if (!wardLocationsCache) {
+    wardLocationsCache = readJsonFile<Record<string, string[]>>('kenya_ward_locations.json');
   }
-  return localitiesCache;
+  return wardLocationsCache;
 }
 
-function getAreas(): AreaRecord[] {
-  if (!areasCache) {
-    areasCache = readJsonFile<AreaRecord[]>('kenya_areas.json');
+function getLocationAreasMap(): Record<string, string[]> {
+  if (!locationAreasCache) {
+    locationAreasCache = readJsonFile<Record<string, string[]>>('kenya_location_areas.json');
   }
-  return areasCache;
+  return locationAreasCache;
 }
 
-function localityMatchesWard(localityName: string, wardName: string): boolean {
-  const localityKey = normalizeLocationKey(localityName);
-  const wardKey = normalizeLocationKey(wardName);
+function buildWardKey(countyName: string, constituencyName: string, wardName: string): string {
+  return `${resolveDatasetCounty(countyName)}|${constituencyName.trim()}|${wardName.trim()}`;
+}
 
-  if (!localityKey || !wardKey) {
-    return false;
-  }
-
-  if (localityKey === wardKey) {
-    return true;
-  }
-
-  const localityPrimary = normalizeLocationKey(localityName.split(/[/-]/)[0] ?? localityName);
-  const wardPrimary = normalizeLocationKey(wardName.split(/[/-]/)[0] ?? wardName);
-
-  return (
-    localityKey.includes(wardKey) ||
-    wardKey.includes(localityKey) ||
-    localityPrimary === wardPrimary
-  );
+function buildLocationKey(countyName: string, locationName: string): string {
+  return `${resolveDatasetCounty(countyName)}|${locationName.trim()}`;
 }
 
 function toLocationOption(name: string): LocationOption {
@@ -101,7 +72,7 @@ function uniqueLocationOptions(options: LocationOption[]): LocationOption[] {
   const seen = new Set<string>();
 
   return options.filter((option) => {
-    const key = normalizeLocationKey(option.value);
+    const key = option.value.trim().toLowerCase();
     if (!key || seen.has(key)) {
       return false;
     }
@@ -112,28 +83,23 @@ function uniqueLocationOptions(options: LocationOption[]): LocationOption[] {
 
 export function getLocationsForWardName(
   countyName: string,
+  constituencyName: string,
   wardName: string,
 ): LocationOption[] {
   const trimmedWard = wardName.trim();
-  if (!trimmedWard) {
+  const trimmedConstituency = constituencyName.trim();
+  if (!trimmedWard || !trimmedConstituency) {
     return [];
   }
 
-  const datasetCounty = resolveDatasetCounty(countyName);
-  const countyLocalities = getLocalities().filter(
-    (locality) => normalizeKey(locality.county) === normalizeKey(datasetCounty),
-  );
+  const wardKey = buildWardKey(countyName, trimmedConstituency, trimmedWard);
+  const locations = getWardLocationsMap()[wardKey] ?? [];
 
-  const wardMatches = countyLocalities.filter((locality) =>
-    localityMatchesWard(locality.name, trimmedWard),
-  );
+  if (locations.length === 0) {
+    return [];
+  }
 
-  const options =
-    wardMatches.length > 0
-      ? wardMatches.map((locality) => toLocationOption(locality.name))
-      : [toLocationOption(trimmedWard), ...countyLocalities.map((locality) => toLocationOption(locality.name))];
-
-  return uniqueLocationOptions(options);
+  return uniqueLocationOptions(locations.map((location) => toLocationOption(location)));
 }
 
 export function getSubLocationsForLocationName(
@@ -145,20 +111,12 @@ export function getSubLocationsForLocationName(
     return [];
   }
 
-  const datasetCounty = resolveDatasetCounty(countyName);
-  const locationKey = normalizeLocationKey(trimmedLocation);
-  const countyAreas = getAreas().filter(
-    (area) => normalizeKey(area.county) === normalizeKey(datasetCounty),
-  );
+  const locationKey = buildLocationKey(countyName, trimmedLocation);
+  const subLocations = getLocationAreasMap()[locationKey] ?? [];
 
-  const directMatches = countyAreas.filter(
-    (area) => normalizeLocationKey(area.locality) === locationKey,
-  );
+  if (subLocations.length === 0) {
+    return [toLocationOption(trimmedLocation)];
+  }
 
-  const options =
-    directMatches.length > 0
-      ? directMatches.map((area) => toLocationOption(area.name))
-      : [toLocationOption(trimmedLocation)];
-
-  return uniqueLocationOptions(options);
+  return uniqueLocationOptions(subLocations.map((subLocation) => toLocationOption(subLocation)));
 }

@@ -14,7 +14,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "build:locations": "node scripts/build-location-data.mjs"
   },
   "dependencies": {
     "@prisma/client": "6.11.1",

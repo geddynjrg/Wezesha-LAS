@@ -82,13 +82,14 @@ export async function ensureLocationDataSeeded(): Promise<boolean> {
 
 export async function getLocationsForWardName(
   countyName: string,
+  constituencyName: string,
   wardName: string,
 ): Promise<LocationOption[]> {
-  if (!countyName.trim() || !wardName.trim()) {
+  if (!countyName.trim() || !constituencyName.trim() || !wardName.trim()) {
     return [];
   }
 
-  return lookupLocationsForWardName(countyName, wardName);
+  return lookupLocationsForWardName(countyName, constituencyName, wardName);
 }
 
 export async function getSubLocationsForLocationName(

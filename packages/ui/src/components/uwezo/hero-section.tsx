@@ -1,6 +1,6 @@
-import type { FC, ReactNode } from "react";
+import type { FC, ReactNode } from 'react';
 
-import { Container } from "@workspace/ui/components/container";
+import { Container } from '@workspace/ui/components/container';
 
 export interface HeroSectionProps {
   title: ReactNode;
@@ -24,12 +24,16 @@ export const HeroSection: FC<HeroSectionProps> = ({
         src="/hero-banners/banner-mobile.jpg"
         alt=""
         aria-hidden="true"
+        fetchPriority="high"
+        decoding="async"
         className="absolute inset-0 z-0 h-full w-full object-cover object-top md:hidden"
       />
       <img
         src="/hero-banners/banner.jpg"
         alt=""
         aria-hidden="true"
+        fetchPriority="high"
+        decoding="async"
         className="absolute inset-0 z-0 hidden h-full w-full object-cover object-top md:block"
       />
 

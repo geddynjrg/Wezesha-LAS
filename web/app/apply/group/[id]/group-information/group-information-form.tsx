@@ -119,24 +119,32 @@ export const GroupInformationForm: FC<GroupInformationFormProps> = ({
     }
   }, []);
 
-  const updateLocationsForWard = useCallback(async (countyName: string, wardName: string) => {
-    const trimmedCounty = countyName?.trim();
-    const trimmedWard = wardName?.trim();
-    if (!trimmedCounty || !trimmedWard) {
-      setFilteredLocations([]);
-      return;
-    }
+  const updateLocationsForWard = useCallback(
+    async (countyName: string, constituencyName: string, wardName: string) => {
+      const trimmedCounty = countyName?.trim();
+      const trimmedConstituency = constituencyName?.trim();
+      const trimmedWard = wardName?.trim();
+      if (!trimmedCounty || !trimmedConstituency || !trimmedWard) {
+        setFilteredLocations([]);
+        return;
+      }
 
-    setIsLoadingLocations(true);
-    try {
-      const locations = await getLocationsForWardName(trimmedCounty, trimmedWard);
-      setFilteredLocations(locations);
-    } catch {
-      setFilteredLocations([]);
-    } finally {
-      setIsLoadingLocations(false);
-    }
-  }, []);
+      setIsLoadingLocations(true);
+      try {
+        const locations = await getLocationsForWardName(
+          trimmedCounty,
+          trimmedConstituency,
+          trimmedWard,
+        );
+        setFilteredLocations(locations);
+      } catch {
+        setFilteredLocations([]);
+      } finally {
+        setIsLoadingLocations(false);
+      }
+    },
+    [],
+  );
 
   const updateSubLocationsForLocation = useCallback(
     async (countyName: string, locationName: string) => {
@@ -167,8 +175,8 @@ export const GroupInformationForm: FC<GroupInformationFormProps> = ({
     if (formValues.constituency) {
       void updateWardsForConstituency(formValues.constituency);
     }
-    if (formValues.county && formValues.ward) {
-      void updateLocationsForWard(formValues.county, formValues.ward);
+    if (formValues.county && formValues.constituency && formValues.ward) {
+      void updateLocationsForWard(formValues.county, formValues.constituency, formValues.ward);
     }
     if (formValues.county && formValues.location) {
       void updateSubLocationsForLocation(formValues.county, formValues.location);
@@ -299,8 +307,9 @@ export const GroupInformationForm: FC<GroupInformationFormProps> = ({
                     setChosenLocation(undefined);
                     setFilteredSubLocations([]);
                     const county = chosenCounty || formValues.county;
-                    if (county) {
-                      void updateLocationsForWard(county, value);
+                    const constituency = chosenConstituency || formValues.constituency;
+                    if (county && constituency) {
+                      void updateLocationsForWard(county, constituency, value);
                     } else {
                       setFilteredLocations([]);
                     }
