@@ -7,10 +7,11 @@ import {
   type GroupInformationInput,
 } from '@/app/apply/group/[id]/group-information/group-information-schema';
 import { ApplyFormActionBar } from '@/components/apply-form-action-bar';
-import { FormField } from '@/components/form-field';
 import { MseaRegistrationFields } from '@/components/msea-registration-fields';
 import {
   getConstituenciesForCountyName,
+  getLocationsForWardName,
+  getSubLocationsForLocationName,
   getWardsForConstituencyName,
   type LocationOption,
 } from '@/lib/api/locations.service';
@@ -43,10 +44,16 @@ export const GroupInformationForm: FC<GroupInformationFormProps> = ({
 
   const [filteredConstituencies, setFilteredConstituencies] = useState<LocationOption[]>([]);
   const [filteredWards, setFilteredWards] = useState<LocationOption[]>([]);
+  const [filteredLocations, setFilteredLocations] = useState<LocationOption[]>([]);
+  const [filteredSubLocations, setFilteredSubLocations] = useState<LocationOption[]>([]);
   const [chosenCounty, setChosenCounty] = useState(formValues.county);
   const [chosenConstituency, setChosenConstituency] = useState(formValues.constituency);
+  const [chosenWard, setChosenWard] = useState(formValues.ward);
+  const [chosenLocation, setChosenLocation] = useState(formValues.location);
   const [isLoadingConstituencies, setIsLoadingConstituencies] = useState(false);
   const [isLoadingWards, setIsLoadingWards] = useState(false);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+  const [isLoadingSubLocations, setIsLoadingSubLocations] = useState(false);
   const [mseaValidated, setMseaValidated] = useState(
     Boolean(
       formValues.groupName &&
@@ -62,7 +69,13 @@ export const GroupInformationForm: FC<GroupInformationFormProps> = ({
     if (formValues.constituency !== undefined) {
       setChosenConstituency(formValues.constituency);
     }
-  }, [formValues.county, formValues.constituency]);
+    if (formValues.ward !== undefined) {
+      setChosenWard(formValues.ward);
+    }
+    if (formValues.location !== undefined) {
+      setChosenLocation(formValues.location);
+    }
+  }, [formValues.county, formValues.constituency, formValues.ward, formValues.location]);
 
   const updateConstituenciesForCounty = useCallback(
     async (countyName: string) => {
@@ -106,6 +119,47 @@ export const GroupInformationForm: FC<GroupInformationFormProps> = ({
     }
   }, []);
 
+  const updateLocationsForWard = useCallback(async (countyName: string, wardName: string) => {
+    const trimmedCounty = countyName?.trim();
+    const trimmedWard = wardName?.trim();
+    if (!trimmedCounty || !trimmedWard) {
+      setFilteredLocations([]);
+      return;
+    }
+
+    setIsLoadingLocations(true);
+    try {
+      const locations = await getLocationsForWardName(trimmedCounty, trimmedWard);
+      setFilteredLocations(locations);
+    } catch {
+      setFilteredLocations([]);
+    } finally {
+      setIsLoadingLocations(false);
+    }
+  }, []);
+
+  const updateSubLocationsForLocation = useCallback(
+    async (countyName: string, locationName: string) => {
+      const trimmedCounty = countyName?.trim();
+      const trimmedLocation = locationName?.trim();
+      if (!trimmedCounty || !trimmedLocation) {
+        setFilteredSubLocations([]);
+        return;
+      }
+
+      setIsLoadingSubLocations(true);
+      try {
+        const subLocations = await getSubLocationsForLocationName(trimmedCounty, trimmedLocation);
+        setFilteredSubLocations(subLocations);
+      } catch {
+        setFilteredSubLocations([]);
+      } finally {
+        setIsLoadingSubLocations(false);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     if (formValues.county) {
       void updateConstituenciesForCounty(formValues.county);
@@ -113,11 +167,21 @@ export const GroupInformationForm: FC<GroupInformationFormProps> = ({
     if (formValues.constituency) {
       void updateWardsForConstituency(formValues.constituency);
     }
+    if (formValues.county && formValues.ward) {
+      void updateLocationsForWard(formValues.county, formValues.ward);
+    }
+    if (formValues.county && formValues.location) {
+      void updateSubLocationsForLocation(formValues.county, formValues.location);
+    }
   }, [
     formValues.county,
     formValues.constituency,
+    formValues.ward,
+    formValues.location,
     updateConstituenciesForCounty,
     updateWardsForConstituency,
+    updateLocationsForWard,
+    updateSubLocationsForLocation,
   ]);
 
   return (
@@ -156,7 +220,11 @@ export const GroupInformationForm: FC<GroupInformationFormProps> = ({
                   onValueSelect={(value) => {
                     setChosenCounty(value);
                     setChosenConstituency(undefined);
+                    setChosenWard(undefined);
+                    setChosenLocation(undefined);
                     setFilteredWards([]);
+                    setFilteredLocations([]);
+                    setFilteredSubLocations([]);
                     if (value) {
                       void updateConstituenciesForCounty(value);
                     } else {
@@ -183,11 +251,19 @@ export const GroupInformationForm: FC<GroupInformationFormProps> = ({
                   onValueChange={(value) => {
                     setChosenConstituency(value);
                     if (!value) {
+                      setChosenWard(undefined);
+                      setChosenLocation(undefined);
                       setFilteredWards([]);
+                      setFilteredLocations([]);
+                      setFilteredSubLocations([]);
                     }
                   }}
                   onValueSelect={(value) => {
                     setChosenConstituency(value);
+                    setChosenWard(undefined);
+                    setChosenLocation(undefined);
+                    setFilteredLocations([]);
+                    setFilteredSubLocations([]);
                     void updateWardsForConstituency(value);
                   }}
                 />
@@ -210,21 +286,76 @@ export const GroupInformationForm: FC<GroupInformationFormProps> = ({
                     !(chosenConstituency || formValues.constituency) ||
                     isLoadingWards
                   }
+                  onValueChange={(value) => {
+                    setChosenWard(value);
+                    if (!value) {
+                      setChosenLocation(undefined);
+                      setFilteredLocations([]);
+                      setFilteredSubLocations([]);
+                    }
+                  }}
+                  onValueSelect={(value) => {
+                    setChosenWard(value);
+                    setChosenLocation(undefined);
+                    setFilteredSubLocations([]);
+                    const county = chosenCounty || formValues.county;
+                    if (county) {
+                      void updateLocationsForWard(county, value);
+                    } else {
+                      setFilteredLocations([]);
+                    }
+                  }}
                 />
               )}
             />
 
-            <FormField
+            <Field
+              state={state}
               name="location"
               label="Location"
-              state={state}
-              defaultValue={formValues.location}
+              required
+              control={(props) => (
+                <SearchInput
+                  {...props}
+                  defaultValue={props.defaultValue ?? formValues.location}
+                  placeholder="Choose or search location"
+                  options={filteredLocations}
+                  isLoading={isLoadingLocations}
+                  disabled={!(chosenWard || formValues.ward) || isLoadingLocations}
+                  onValueChange={(value) => {
+                    setChosenLocation(value);
+                    if (!value) {
+                      setFilteredSubLocations([]);
+                    }
+                  }}
+                  onValueSelect={(value) => {
+                    setChosenLocation(value);
+                    const county = chosenCounty || formValues.county;
+                    if (county) {
+                      void updateSubLocationsForLocation(county, value);
+                    } else {
+                      setFilteredSubLocations([]);
+                    }
+                  }}
+                />
+              )}
             />
-            <FormField
+
+            <Field
+              state={state}
               name="subLocation"
               label="Sub-location"
-              state={state}
-              defaultValue={formValues.subLocation}
+              required
+              control={(props) => (
+                <SearchInput
+                  {...props}
+                  defaultValue={props.defaultValue ?? formValues.subLocation}
+                  placeholder="Choose or search sub-location"
+                  options={filteredSubLocations}
+                  isLoading={isLoadingSubLocations}
+                  disabled={!(chosenLocation || formValues.location) || isLoadingSubLocations}
+                />
+              )}
             />
           </div>
         </FormCard>

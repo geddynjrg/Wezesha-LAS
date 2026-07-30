@@ -104,36 +104,55 @@ async function loadAgenciesFromCsv(): Promise<RecruitmentAgency[]> {
   return agenciesLoadPromise;
 }
 
+function normalizeAgencySearchValue(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function agencyMatchesQuery(agency: RecruitmentAgency, normalizedQuery: string): boolean {
+  const regNo = normalizeAgencySearchValue(agency.neaRegNo);
+  const agencyName = normalizeAgencySearchValue(agency.agencyName);
+
+  return regNo.includes(normalizedQuery) || agencyName.includes(normalizedQuery);
+}
+
+function agencySearchRank(agency: RecruitmentAgency, normalizedQuery: string): number {
+  const regNo = normalizeAgencySearchValue(agency.neaRegNo);
+  const agencyName = normalizeAgencySearchValue(agency.agencyName);
+
+  if (regNo === normalizedQuery || agencyName === normalizedQuery) {
+    return 0;
+  }
+
+  if (regNo.startsWith(normalizedQuery) || agencyName.startsWith(normalizedQuery)) {
+    return 1;
+  }
+
+  if (agencyName.includes(normalizedQuery)) {
+    return 2;
+  }
+
+  return 3;
+}
+
 function searchLocalAgencies(
   agencies: RecruitmentAgency[],
   query: string,
 ): RecruitmentAgency[] {
-  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery = normalizeAgencySearchValue(query);
   if (normalizedQuery.length < 2) {
     return [];
   }
 
-  const matches = agencies.filter((agency) =>
-    agency.neaRegNo.toLowerCase().includes(normalizedQuery),
-  );
+  const matches = agencies.filter((agency) => agencyMatchesQuery(agency, normalizedQuery));
 
   matches.sort((left, right) => {
-    const leftReg = left.neaRegNo.toLowerCase();
-    const rightReg = right.neaRegNo.toLowerCase();
-
-    const leftExact = leftReg === normalizedQuery;
-    const rightExact = rightReg === normalizedQuery;
-    if (leftExact !== rightExact) {
-      return leftExact ? -1 : 1;
+    const leftRank = agencySearchRank(left, normalizedQuery);
+    const rightRank = agencySearchRank(right, normalizedQuery);
+    if (leftRank !== rightRank) {
+      return leftRank - rightRank;
     }
 
-    const leftStarts = leftReg.startsWith(normalizedQuery);
-    const rightStarts = rightReg.startsWith(normalizedQuery);
-    if (leftStarts !== rightStarts) {
-      return leftStarts ? -1 : 1;
-    }
-
-    return left.neaRegNo.localeCompare(right.neaRegNo);
+    return left.agencyName.localeCompare(right.agencyName);
   });
 
   return matches.slice(0, MAX_RESULTS);
@@ -178,10 +197,7 @@ export async function searchRecruitmentAgencies(
 
   try {
     const agencies = await loadAgenciesFromCsv();
-    const localResults = searchLocalAgencies(agencies, trimmed);
-    if (localResults.length > 0) {
-      return localResults;
-    }
+    return searchLocalAgencies(agencies, trimmed);
   } catch {
     // Fall through to optional external lookup when CSV is unavailable.
   }

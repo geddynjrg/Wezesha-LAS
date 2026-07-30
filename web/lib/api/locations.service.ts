@@ -1,5 +1,9 @@
 'use server';
 
+import {
+  getLocationsForWardName as lookupLocationsForWardName,
+  getSubLocationsForLocationName as lookupSubLocationsForLocationName,
+} from '@/lib/locations/administrative-locations';
 import { titleCaseLabel } from '@/lib/locations/format';
 import { prisma } from '@/lib/prisma';
 
@@ -74,6 +78,28 @@ export async function getWardsForConstituencyName(
 export async function ensureLocationDataSeeded(): Promise<boolean> {
   const count = await prisma.county.count();
   return count > 0;
+}
+
+export async function getLocationsForWardName(
+  countyName: string,
+  wardName: string,
+): Promise<LocationOption[]> {
+  if (!countyName.trim() || !wardName.trim()) {
+    return [];
+  }
+
+  return lookupLocationsForWardName(countyName, wardName);
+}
+
+export async function getSubLocationsForLocationName(
+  countyName: string,
+  locationName: string,
+): Promise<LocationOption[]> {
+  if (!countyName.trim() || !locationName.trim()) {
+    return [];
+  }
+
+  return lookupSubLocationsForLocationName(countyName, locationName);
 }
 
 export async function getAllConstituencyOptions(): Promise<LocationOption[]> {
