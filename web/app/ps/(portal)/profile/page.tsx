@@ -39,12 +39,14 @@ export default async function PsProfilePage() {
           </dl>
         </Card>
 
-        <FormCard title="Change password">
-          <p className="mb-4 text-sm text-neutral-600">
-            Update your portal password. You will remain signed in after changing it.
-          </p>
-          <ChangePasswordForm />
-        </FormCard>
+        <div id="change-password" className="scroll-mt-8">
+          <FormCard title="Change password">
+            <p className="mb-4 text-sm text-neutral-600">
+              Update your portal password. You will remain signed in after changing it.
+            </p>
+            <ChangePasswordForm />
+          </FormCard>
+        </div>
       </div>
     </Container>
   );

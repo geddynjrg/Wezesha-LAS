@@ -30,6 +30,8 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   const locale = (await getLocale()) as Locale;
   const messages = await getMessages();
   const headersList = await headers();
+  const path = headersList.get('x-path') ?? '';
+  const isPsRoute = path.startsWith('/ps');
 
   return (
     <html
@@ -40,12 +42,18 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       <body className="min-h-svh antialiased bg-site-background [--header-height:4.5rem]">
         <NextIntlClientProvider messages={messages}>
           <Providers>
-            <MajuuHeader />
-            <AppSidebar locale={locale} />
-            <SidebarInset className="bg-gradient-to-b from-[hsl(0,0%,97%)] to-[hsl(310,50%,97%)] min-h-[calc(100svh-var(--header-height))]">
+            {!isPsRoute ? <MajuuHeader /> : null}
+            {!isPsRoute ? <AppSidebar locale={locale} /> : null}
+            <SidebarInset
+              className={
+                isPsRoute
+                  ? 'min-h-[calc(100svh-var(--header-height))]'
+                  : 'bg-gradient-to-b from-[hsl(0,0%,97%)] to-[hsl(310,50%,97%)] min-h-[calc(100svh-var(--header-height))]'
+              }
+            >
               <main className="flex min-h-0 flex-1 flex-col">{children}</main>
             </SidebarInset>
-            <MajuuFooter />
+            {!isPsRoute ? <MajuuFooter /> : null}
           </Providers>
         </NextIntlClientProvider>
       </body>

@@ -34,9 +34,12 @@ export const PsProfileMenu: FC<PsProfileMenuProps> = ({ name, email, role }) => 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="secondary" size="sm" className="gap-2">
-          <IconUserCircle className="h-4 w-4" />
-          My Profile
+        <Button
+          variant="ghost"
+          className="size-13 rounded-0 hover:bg-header flex flex-col items-center gap-0 p-0"
+        >
+          <IconUserCircle />
+          <span className="text-nowrap text-xs font-normal">Profile</span>
         </Button>
       </DropdownMenuTrigger>
 
@@ -52,6 +55,12 @@ export const PsProfileMenu: FC<PsProfileMenuProps> = ({ name, email, role }) => 
         <DropdownMenuItem asChild>
           <Link href="/ps/profile" className="cursor-pointer">
             My Profile
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem asChild>
+          <Link href="/ps/profile#change-password" className="cursor-pointer">
+            Change password
           </Link>
         </DropdownMenuItem>
 
