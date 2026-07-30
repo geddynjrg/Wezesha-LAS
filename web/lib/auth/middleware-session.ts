@@ -52,7 +52,7 @@ export async function getMiddlewareSession(): Promise<{
   }
 
   const verified = await verifyRefreshTokenEdge(refreshToken);
-  return verified ? { userId: verified.userId, role: 'APPLICANT' } : null;
+  return verified ? { userId: verified.userId, role: verified.role } : null;
 }
 
 /** Whether the user has an active access session (login page redirect only). */

@@ -74,7 +74,9 @@ export async function middleware(request: NextRequest) {
   );
   const isPsProtected = psProtectedRoutes.some((route) => path.startsWith(route));
   const isPsPublic = psPublicRoutes.some((route) => path.startsWith(route));
-  const session = await getMiddlewareSession();
+  const needsSession =
+    isApplicantProtected || isPsProtected || isPsPublic || isApplicantPublic;
+  const session = needsSession ? await getMiddlewareSession() : null;
 
   if (isPsPublic && path.startsWith('/ps/sign-in')) {
     if (session && isPsRole(session.role)) {
@@ -93,6 +95,12 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isApplicantPublic && path.startsWith('/login')) {
+    if (session && isPsRole(session.role)) {
+      return NextResponse.redirect(new URL('/ps/dashboard', request.nextUrl), {
+        headers: requestHeaders,
+      });
+    }
+
     if (await hasActiveAccessSession()) {
       const savedPath =
         getReturnPathFromCookieValue(

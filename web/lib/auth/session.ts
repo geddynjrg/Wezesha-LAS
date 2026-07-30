@@ -148,16 +148,15 @@ export async function updateSession(): Promise<string | null> {
     return null;
   }
 
-  const newAccessToken = await signAccessToken(
-    verified.userId,
+  const role =
     (
       await prisma.user.findUnique({
         where: { id: verified.userId },
         select: { role: true },
       })
-    )?.role ?? 'APPLICANT',
-  );
-  const newRefreshToken = await signRefreshToken(verified.userId);
+    )?.role ?? verified.role ?? 'APPLICANT';
+  const newAccessToken = await signAccessToken(verified.userId, role);
+  const newRefreshToken = await signRefreshToken(verified.userId, role);
 
   await prisma.$transaction([
     prisma.refreshToken.deleteMany({ where: { tokenHash } }),
@@ -204,7 +203,7 @@ export async function issueTokensForUser(userId: string) {
   const role = user?.role ?? 'APPLICANT';
 
   const accessToken = await signAccessToken(userId, role);
-  const refreshToken = await signRefreshToken(userId);
+  const refreshToken = await signRefreshToken(userId, role);
 
   await prisma.refreshToken.create({
     data: {

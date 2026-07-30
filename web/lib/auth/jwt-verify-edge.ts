@@ -31,11 +31,12 @@ export async function verifyAccessTokenEdge(
 
 export async function verifyRefreshTokenEdge(
   token: string,
-): Promise<{ userId: string } | null> {
+): Promise<{ userId: string; role: string } | null> {
   try {
     const { payload } = await jwtVerify(token, getRefreshSecret());
     const userId = payload.sub;
-    return typeof userId === 'string' ? { userId } : null;
+    const role = typeof payload.role === 'string' ? payload.role : 'APPLICANT';
+    return typeof userId === 'string' ? { userId, role } : null;
   } catch {
     return null;
   }
