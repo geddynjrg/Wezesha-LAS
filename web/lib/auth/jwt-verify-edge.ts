@@ -18,11 +18,12 @@ function getRefreshSecret(): Uint8Array {
 
 export async function verifyAccessTokenEdge(
   token: string,
-): Promise<{ userId: string } | null> {
+): Promise<{ userId: string; role: string } | null> {
   try {
     const { payload } = await jwtVerify(token, getAccessSecret());
     const userId = payload.sub;
-    return typeof userId === 'string' ? { userId } : null;
+    const role = typeof payload.role === 'string' ? payload.role : 'APPLICANT';
+    return typeof userId === 'string' ? { userId, role } : null;
   } catch {
     return null;
   }

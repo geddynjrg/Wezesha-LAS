@@ -34,13 +34,25 @@ async function getVerifiedRefreshToken(): Promise<string | null> {
 }
 
 /** Lightweight session check for middleware (no DB/Prisma). */
-export async function getMiddlewareSession(): Promise<string | null> {
-  const accessToken = await getValidAccessToken();
-  if (accessToken) {
-    return accessToken;
+export async function getMiddlewareSession(): Promise<{
+  userId: string;
+  role: string;
+} | null> {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE_NAME)?.value;
+
+  if (accessToken && !isTokenExpired(accessToken)) {
+    const verified = await verifyAccessTokenEdge(accessToken);
+    if (verified) return verified;
   }
 
-  return getVerifiedRefreshToken();
+  const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE_NAME)?.value;
+  if (!refreshToken || isTokenExpired(refreshToken)) {
+    return null;
+  }
+
+  const verified = await verifyRefreshTokenEdge(refreshToken);
+  return verified ? { userId: verified.userId, role: 'APPLICANT' } : null;
 }
 
 /** Whether the user has an active access session (login page redirect only). */

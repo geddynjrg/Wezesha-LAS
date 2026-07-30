@@ -81,6 +81,43 @@ export async function getSessionUserId(): Promise<string | null> {
   return verified.userId;
 }
 
+export async function getSessionUserRole(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE_NAME)?.value;
+
+  if (accessToken && !isTokenExpired(accessToken)) {
+    const verified = await verifyAccessToken(accessToken);
+    return verified?.role ?? null;
+  }
+
+  const userId = await getSessionUserId();
+  if (!userId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  return user?.role ?? null;
+}
+
+export async function getSessionUser() {
+  const userId = await getSessionUserId();
+  if (!userId) return null;
+
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      phoneNumber: true,
+      name: true,
+      identifierType: true,
+      role: true,
+    },
+  });
+}
+
 export async function updateSession(): Promise<string | null> {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE_NAME)?.value;
@@ -111,7 +148,15 @@ export async function updateSession(): Promise<string | null> {
     return null;
   }
 
-  const newAccessToken = await signAccessToken(verified.userId);
+  const newAccessToken = await signAccessToken(
+    verified.userId,
+    (
+      await prisma.user.findUnique({
+        where: { id: verified.userId },
+        select: { role: true },
+      })
+    )?.role ?? 'APPLICANT',
+  );
   const newRefreshToken = await signRefreshToken(verified.userId);
 
   await prisma.$transaction([
@@ -152,7 +197,13 @@ async function deleteCookies() {
 }
 
 export async function issueTokensForUser(userId: string) {
-  const accessToken = await signAccessToken(userId);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  const role = user?.role ?? 'APPLICANT';
+
+  const accessToken = await signAccessToken(userId, role);
   const refreshToken = await signRefreshToken(userId);
 
   await prisma.refreshToken.create({

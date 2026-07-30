@@ -20,8 +20,8 @@ function getRefreshSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-export async function signAccessToken(userId: string): Promise<string> {
-  return new SignJWT({ sub: userId })
+export async function signAccessToken(userId: string, role?: string): Promise<string> {
+  return new SignJWT({ sub: userId, role: role ?? 'APPLICANT' })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(ACCESS_TOKEN_TTL)
@@ -36,11 +36,14 @@ export async function signRefreshToken(userId: string): Promise<string> {
     .sign(getRefreshSecret());
 }
 
-export async function verifyAccessToken(token: string): Promise<{ userId: string } | null> {
+export async function verifyAccessToken(
+  token: string,
+): Promise<{ userId: string; role: string } | null> {
   try {
     const { payload } = await jwtVerify(token, getAccessSecret());
     const userId = payload.sub;
-    return typeof userId === 'string' ? { userId } : null;
+    const role = typeof payload.role === 'string' ? payload.role : 'APPLICANT';
+    return typeof userId === 'string' ? { userId, role } : null;
   } catch {
     return null;
   }

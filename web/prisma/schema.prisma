@@ -43,6 +43,12 @@ enum IdentifierType {
   ECITIZEN
 }
 
+enum UserRole {
+  APPLICANT
+  PS_LABOUR
+  PS_MSME
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String?        @unique
@@ -53,6 +59,7 @@ model User {
   kraPin         String?
   ecitizenId     String?        @unique
   identifierType IdentifierType @default(EMAIL)
+  role           UserRole       @default(APPLICANT)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -388,12 +395,18 @@ model SignatureData {
 }
 
 model TripartiteData {
-  id             String                @id @default(cuid())
-  applicationId  String                @unique
-  migrantName    String
-  idNumber       String
-  passportNumber String
-  application    IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  id                 String                @id @default(cuid())
+  applicationId      String                @unique
+  migrantName        String
+  idNumber           String
+  passportNumber     String
+  labourPsSignature  String?               @db.LongText
+  labourPsSignedAt   DateTime?
+  labourPsSignedBy   String?
+  msmePsSignature    String?               @db.LongText
+  msmePsSignedAt     DateTime?
+  msmePsSignedBy     String?
+  application        IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@map("tripartite_data")
 }

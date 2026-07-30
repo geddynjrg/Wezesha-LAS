@@ -2,6 +2,7 @@ import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { issueTokensForUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { IdentifierType } from '@/generated/prisma';
+import { isPsRole } from '@/lib/auth/roles';
 
 export async function registerWithEmail(email: string, password: string) {
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -23,7 +24,21 @@ export async function registerWithEmail(email: string, password: string) {
 
 export async function loginWithEmail(email: string, password: string) {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user?.passwordHash) {
+  if (!user?.passwordHash || isPsRole(user.role)) {
+    throw new Error('Invalid email or password');
+  }
+
+  const valid = await verifyPassword(password, user.passwordHash);
+  if (!valid) {
+    throw new Error('Invalid email or password');
+  }
+
+  return issueTokensForUser(user.id);
+}
+
+export async function loginPsWithEmail(email: string, password: string) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user?.passwordHash || !isPsRole(user.role)) {
     throw new Error('Invalid email or password');
   }
 
@@ -44,6 +59,7 @@ export async function getUserById(userId: string) {
       phoneNumber: true,
       name: true,
       identifierType: true,
+      role: true,
     },
   });
 }
