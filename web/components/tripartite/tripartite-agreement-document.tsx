@@ -122,7 +122,8 @@ export const TripartiteAgreementDocument: FC<TripartiteAgreementDocumentProps> =
         </p>
         <p className="my-2">AND</p>
         <p>
-          MINISTRY OF COOPERATIVES AND MSMEs DEVELOPMENT, STATE DEPARTMENT OF MSMEs DEVELOPMENT
+          MINISTRY OF COOPERATIVES AND MICRO SMALL AND MEDIUM ENTERPRISES DEVELOPMENT, STATE
+          DEPARTMENT OF MICRO SMALL AND MEDIUM ENTERPRISES DEVELOPMENT
         </p>
       </div>
 
@@ -132,7 +133,7 @@ export const TripartiteAgreementDocument: FC<TripartiteAgreementDocumentProps> =
 
       <p className="italic">
         This is a tripartite agreement between the Ministry of Labour and Social Protection, Ministry
-        of Cooperatives and MSMEs Development and Labour Migrants.
+        of Cooperatives and Micro Small and Medium Enterprises Development and Labour Migrants.
       </p>
 
       <span className="agreement-section-title mb-2 mt-6 block font-bold underline">
@@ -173,10 +174,11 @@ export const TripartiteAgreementDocument: FC<TripartiteAgreementDocumentProps> =
       </p>
 
       <span className="agreement-section-title mb-2 mt-6 block font-bold underline">
-        2. THE MINISTRY OF COOPERATIVES AND MSMEs DEVELOPMENT
+        2. THE MINISTRY OF COOPERATIVES AND MICRO SMALL AND MEDIUM ENTERPRISES DEVELOPMENT
       </span>
       <p>
-        The Ministry of Cooperatives and MSMEs Development through Uwezo Fund shall be the Financier
+        The Ministry of Cooperatives and Micro Small and Medium Enterprises Development through Uwezo
+        Fund shall be the Financier
         of the <em>Wezesha Majuu</em> loan product. In performing this function, the Fund shall
         commit to undertake the following;
       </p>
@@ -202,7 +204,7 @@ export const TripartiteAgreementDocument: FC<TripartiteAgreementDocumentProps> =
         <DateDisplay date={msmeDate} />
       </div>
       <p className="role-title mt-1 font-bold italic">
-        Principal Secretary State Department for MSME Development
+        Principal Secretary State Department for Micro Small and Medium Enterprise Development
       </p>
 
       <span className="agreement-section-title mb-2 mt-6 block font-bold underline">

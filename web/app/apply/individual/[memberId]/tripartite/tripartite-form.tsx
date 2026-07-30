@@ -90,7 +90,8 @@ export const TripartiteForm: FC<TripartiteFormProps> = ({
               <span>
                 I have read and accept the tripartite agreement between the Ministry of Labour and
                 Social Protection, State Department for Labour and Skills Development; the Ministry
-                of Cooperatives and MSMEs Development, State Department of MSMEs Development; and
+                of Cooperatives and Micro Small and Medium Enterprises Development, State Department
+                of Micro Small and Medium Enterprises Development; and
                 the labour migrant for the Wezesha Majuu programme.
               </span>
             </label>

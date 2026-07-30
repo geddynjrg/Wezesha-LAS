@@ -7,38 +7,66 @@ const POST_SUBMISSION_STATUSES: ApplicationStatus[] = [
   ApplicationStatus.APPROVED,
 ];
 
-const pendingSignatureFilter = (role: UserRole): Prisma.IndividualApplicationWhereInput => {
-  const base: Prisma.IndividualApplicationWhereInput = {
-    tripartiteAccepted: true,
-    status: { in: POST_SUBMISSION_STATUSES },
-    tripartite: { isNot: null },
-  };
+const tripartiteBaseFilter: Prisma.IndividualApplicationWhereInput = {
+  tripartiteAccepted: true,
+  status: { in: POST_SUBMISSION_STATUSES },
+  tripartite: { isNot: null },
+};
 
+const pendingSignatureFilter = (role: UserRole): Prisma.IndividualApplicationWhereInput => {
   if (role === UserRole.PS_LABOUR) {
     return {
-      ...base,
+      ...tripartiteBaseFilter,
       tripartite: { is: { labourPsSignature: null } },
     };
   }
 
   if (role === UserRole.PS_MSME) {
     return {
-      ...base,
+      ...tripartiteBaseFilter,
       tripartite: { is: { msmePsSignature: null } },
     };
   }
 
-  return base;
+  return tripartiteBaseFilter;
 };
+
+const signedSignatureFilter = (role: UserRole): Prisma.IndividualApplicationWhereInput => {
+  if (role === UserRole.PS_LABOUR) {
+    return {
+      ...tripartiteBaseFilter,
+      tripartite: { is: { labourPsSignature: { not: null } } },
+    };
+  }
+
+  if (role === UserRole.PS_MSME) {
+    return {
+      ...tripartiteBaseFilter,
+      tripartite: { is: { msmePsSignature: { not: null } } },
+    };
+  }
+
+  return tripartiteBaseFilter;
+};
+
+const psApplicationInclude = {
+  member: { include: { application: { include: { groupData: true } } } },
+  tripartite: true,
+  signature: true,
+} as const;
 
 export async function getPsPendingApplications(role: UserRole) {
   return prisma.individualApplication.findMany({
     where: pendingSignatureFilter(role),
-    include: {
-      member: { include: { application: { include: { groupData: true } } } },
-      tripartite: true,
-      signature: true,
-    },
+    include: psApplicationInclude,
+    orderBy: { submittedAt: 'desc' },
+  });
+}
+
+export async function getPsSignedApplications(role: UserRole) {
+  return prisma.individualApplication.findMany({
+    where: signedSignatureFilter(role),
+    include: psApplicationInclude,
     orderBy: { submittedAt: 'desc' },
   });
 }
@@ -46,16 +74,18 @@ export async function getPsPendingApplications(role: UserRole) {
 export async function getPsApplicationById(applicationId: string) {
   return prisma.individualApplication.findUnique({
     where: { id: applicationId },
-    include: {
-      member: { include: { application: { include: { groupData: true } } } },
-      tripartite: true,
-      signature: true,
-    },
+    include: psApplicationInclude,
   });
 }
 
 export async function countPsPendingApplications(role: UserRole) {
   return prisma.individualApplication.count({
     where: pendingSignatureFilter(role),
+  });
+}
+
+export async function countPsSignedApplications(role: UserRole) {
+  return prisma.individualApplication.count({
+    where: signedSignatureFilter(role),
   });
 }

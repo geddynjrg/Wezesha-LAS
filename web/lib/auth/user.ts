@@ -63,3 +63,29 @@ export async function getUserById(userId: string) {
     },
   });
 }
+
+export async function changePsPassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { passwordHash: true, role: true },
+  });
+
+  if (!user?.passwordHash || !isPsRole(user.role)) {
+    throw new Error('Unable to change password');
+  }
+
+  const valid = await verifyPassword(currentPassword, user.passwordHash);
+  if (!valid) {
+    throw new Error('Current password is incorrect');
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash },
+  });
+}

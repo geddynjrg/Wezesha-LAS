@@ -55,7 +55,7 @@ export const PsTripartiteForm: FC<PsTripartiteFormProps> = ({
   const roleTitle =
     psRole === UserRole.PS_LABOUR
       ? 'Labour & Skills Development'
-      : 'MSME Development';
+      : 'Micro Small and Medium Enterprise Development';
 
   return (
     <Container className="py-8">
@@ -64,7 +64,9 @@ export const PsTripartiteForm: FC<PsTripartiteFormProps> = ({
           <p className="text-sm text-neutral-500">Application {acknowledgmentNumber}</p>
           <h2 className="typo-h2">Tripartite Agreement</h2>
           <p className="typo-body-medium text-neutral-600">
-            Review the agreement below and append your signature as Principal Secretary – {roleTitle}.
+            {alreadySigned
+              ? `View the fully signed agreement including your signature as Principal Secretary – ${roleTitle}.`
+              : `Review the agreement below and append your signature as Principal Secretary – ${roleTitle}.`}
           </p>
         </div>
         <Button variant="secondary" asChild>
