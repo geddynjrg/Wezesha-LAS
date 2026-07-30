@@ -1,6 +1,6 @@
-import { AppSidebar } from '@/components/app-sidebar';
+import { LazyAppSidebar } from '@/components/lazy-app-sidebar';
+import { LazyMajuuHeader } from '@/components/lazy-majuu-header';
 import { MajuuFooter } from '@/components/majuu-footer';
-import { MajuuHeader } from '@/components/majuu-header';
 import { Providers } from '@/components/providers';
 import type { Locale } from '@/i18n/config';
 import { SidebarInset } from '@workspace/ui/components/sidebar';
@@ -11,6 +11,7 @@ import localFont from 'next/font/local';
 import { headers } from 'next/headers';
 import { userAgent } from 'next/server';
 import type { ReactNode } from 'react';
+import { Suspense } from 'react';
 
 const dmSans = localFont({
   src: [
@@ -39,11 +40,25 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       suppressHydrationWarning
       className={`${dmSans.variable} font-sans uwezo device-type-${getDeviceType(headersList)}`}
     >
+      <link
+        rel="preload"
+        href="/hero-banners/banner-mobile.jpg"
+        as="image"
+        media="(max-width: 767px)"
+        fetchPriority="high"
+      />
+      <link
+        rel="preload"
+        href="/hero-banners/banner.jpg"
+        as="image"
+        media="(min-width: 768px)"
+        fetchPriority="high"
+      />
       <body className="min-h-svh antialiased bg-site-background [--header-height:4.5rem]">
         <NextIntlClientProvider messages={messages}>
           <Providers>
-            {!isPsRoute ? <MajuuHeader /> : null}
-            {!isPsRoute ? <AppSidebar locale={locale} /> : null}
+            {!isPsRoute ? <LazyMajuuHeader /> : null}
+            {!isPsRoute ? <LazyAppSidebar locale={locale} /> : null}
             <SidebarInset
               className={
                 isPsRoute
@@ -53,7 +68,11 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             >
               <main className="flex min-h-0 flex-1 flex-col">{children}</main>
             </SidebarInset>
-            {!isPsRoute ? <MajuuFooter /> : null}
+            {!isPsRoute ? (
+              <Suspense fallback={null}>
+                <MajuuFooter />
+              </Suspense>
+            ) : null}
           </Providers>
         </NextIntlClientProvider>
       </body>

@@ -1,10 +1,12 @@
-import { ApplyButton } from '@/components/apply-button';
+import { StaticApplyButton } from '@/components/static-apply-button';
 import { Container } from '@workspace/ui/components/container';
 import { HeroSection } from '@workspace/ui/components/uwezo/hero-section';
 import { Card } from '@workspace/ui/components/uwezo/card';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { Button } from '@workspace/ui/components/button';
+
+export const revalidate = 3600;
 
 export default async function Page() {
   const t = await getTranslations('FrontPage');
@@ -20,7 +22,7 @@ export default async function Page() {
           </>
         }
         backgroundAlt={t('imageDescription')}
-        actions={<ApplyButton />}
+        actions={<StaticApplyButton />}
       >
         <span className="typo-body-large">
           {t.rich('description', {
@@ -49,7 +51,7 @@ export default async function Page() {
 
       <div className="py-7.5 bg-primary lg:bg-transparent">
         <Container className="flex flex-wrap gap-4">
-          <ApplyButton className="lg:hover:bg-primary mx-auto max-lg:flex-1 lg:basis-1/2" />
+          <StaticApplyButton className="lg:hover:bg-primary mx-auto max-lg:flex-1 lg:basis-1/2" />
           <Button asChild variant="secondary" className="mx-auto lg:basis-auto">
             <Link href="/apply">How it works</Link>
           </Button>

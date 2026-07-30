@@ -25,7 +25,10 @@ export const HeroSection: FC<HeroSectionProps> = ({
         alt=""
         aria-hidden="true"
         fetchPriority="high"
+        loading="eager"
         decoding="async"
+        width={768}
+        height={512}
         className="absolute inset-0 z-0 h-full w-full object-cover object-top md:hidden"
       />
       <img
@@ -33,7 +36,10 @@ export const HeroSection: FC<HeroSectionProps> = ({
         alt=""
         aria-hidden="true"
         fetchPriority="high"
+        loading="eager"
         decoding="async"
+        width={1920}
+        height={448}
         className="absolute inset-0 z-0 hidden h-full w-full object-cover object-top md:block"
       />
 
