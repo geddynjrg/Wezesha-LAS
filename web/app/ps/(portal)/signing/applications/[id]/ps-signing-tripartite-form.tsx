@@ -64,6 +64,8 @@ export const PsSigningTripartiteForm: FC<PsSigningTripartiteFormProps> = ({
   const signEligibility = canPsSignTripartite(psRole, tripartite);
   const awaitingMsmeForLabour =
     psRole === UserRole.PS_LABOUR && signingStatus === 'awaiting_msme';
+  const msmeSignsOnDashboard =
+    psRole === UserRole.PS_MSME && !alreadySigned && signEligibility.allowed;
 
   const roleTitle =
     psRole === UserRole.PS_LABOUR
@@ -81,7 +83,9 @@ export const PsSigningTripartiteForm: FC<PsSigningTripartiteFormProps> = ({
               ? `View the fully signed agreement including your signature as Principal Secretary – ${roleTitle}.`
               : awaitingMsmeForLabour
                 ? `Review the agreement below. Signing will be available once the MSME Principal Secretary has signed.`
-                : `Review the agreement below and append your signature as Principal Secretary – ${roleTitle}.`}
+                : msmeSignsOnDashboard
+                  ? `Review the agreement below. Append your signature from the signing dashboard to forward pending agreements to Labour PS.`
+                  : `Review the agreement below and append your signature as Principal Secretary – ${roleTitle}.`}
           </p>
         </div>
         <Button variant="secondary" asChild>
@@ -113,6 +117,14 @@ export const PsSigningTripartiteForm: FC<PsSigningTripartiteFormProps> = ({
       ) : awaitingMsmeForLabour ? (
         <Alert variant="info" className="mt-6">
           Awaiting MSME PS signature
+        </Alert>
+      ) : msmeSignsOnDashboard ? (
+        <Alert variant="info" className="mt-6">
+          Sign all pending agreements from the{' '}
+          <Link href="/ps/signing" className="font-medium text-primary underline">
+            signing dashboard
+          </Link>{' '}
+          to forward them to Labour PS.
         </Alert>
       ) : signEligibility.allowed ? (
         <Form action={formAction} className="mt-6">

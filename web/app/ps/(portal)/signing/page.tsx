@@ -1,3 +1,4 @@
+import { PsSigningBatchForm } from '@/app/ps/(portal)/signing/ps-signing-batch-form';
 import {
   countPsSigningPendingApplications,
   countPsSigningSignedApplications,
@@ -91,7 +92,11 @@ function ApplicationList({
                   </p>
                 ) : null}
                 <p className="mt-2 font-medium text-primary">
-                  {isPending ? 'Review & sign →' : 'View agreement →'}
+                  {isPending
+                    ? psRole === UserRole.PS_MSME
+                      ? 'Review agreement →'
+                      : 'Review & sign →'
+                    : 'View agreement →'}
                 </p>
               </div>
             </div>
@@ -168,6 +173,12 @@ export default async function PsSigningDashboardPage({
       </div>
 
       <ApplicationList applications={applications} variant={view} psRole={user.role} />
+
+      {view === 'pending' &&
+      user.role === UserRole.PS_MSME &&
+      applications.length > 0 ? (
+        <PsSigningBatchForm pendingCount={applications.length} />
+      ) : null}
     </Container>
   );
 }
