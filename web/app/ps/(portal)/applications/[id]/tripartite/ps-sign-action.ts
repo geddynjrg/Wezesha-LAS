@@ -61,16 +61,6 @@ export async function psSignTripartiteAction(
       };
     }
 
-    if (!application.tripartite.msmePsSignature) {
-      return {
-        success: false as const,
-        errors: {},
-        message:
-          'The MSME Principal Secretary must sign this agreement first. It will be forwarded to Labour PS for signature once MSME signing is complete.',
-        values: raw,
-      };
-    }
-
     await prisma.tripartiteData.update({
       where: { applicationId },
       data: {

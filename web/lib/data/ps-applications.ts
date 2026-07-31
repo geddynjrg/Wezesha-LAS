@@ -17,12 +17,7 @@ const pendingSignatureFilter = (role: UserRole): Prisma.IndividualApplicationWhe
   if (role === UserRole.PS_LABOUR) {
     return {
       ...tripartiteBaseFilter,
-      tripartite: {
-        is: {
-          msmePsSignature: { not: null },
-          labourPsSignature: null,
-        },
-      },
+      tripartite: { is: { labourPsSignature: null } },
     };
   }
 

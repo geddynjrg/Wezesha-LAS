@@ -59,21 +59,11 @@ export function DateDisplay({ date }: { date: string }) {
   );
 }
 
-export interface TripartiteApplicant {
-  name: string;
-  idNumber: string;
-  passportNumber: string;
-  signature?: string | null;
-  acknowledgmentNumber?: string;
-}
-
 export interface TripartiteAgreementDocumentProps {
   migrantName: string;
   idNumber: string;
   passportNumber: string;
   migrantSignature?: string | null;
-  /** When set (PS view), section 3 lists all applicants with individual signatures. */
-  applicants?: TripartiteApplicant[];
   labourPsSignature?: string | null;
   labourPsSignedAt?: Date | string | null;
   msmePsSignature?: string | null;
@@ -83,68 +73,11 @@ export interface TripartiteAgreementDocumentProps {
   onMigrantNameChange?: (name: string) => void;
 }
 
-function ApplicantListSection({ applicants }: { applicants: TripartiteApplicant[] }) {
-  return (
-    <div className="mb-4 space-y-4">
-      <p>The following labour migrants are party to this agreement:</p>
-      <div className="overflow-x-auto rounded border border-neutral-200">
-        <table className="w-full min-w-[640px] border-collapse text-left text-[11pt]">
-          <thead>
-            <tr className="border-b border-neutral-300 bg-[#fcfcfc]">
-              <th className="px-3 py-2 font-bold">Name</th>
-              <th className="px-3 py-2 font-bold">ID No</th>
-              <th className="px-3 py-2 font-bold">Passport no.</th>
-              {applicants.some((a) => a.acknowledgmentNumber) ? (
-                <th className="px-3 py-2 font-bold">Application</th>
-              ) : null}
-            </tr>
-          </thead>
-          <tbody>
-            {applicants.map((applicant, index) => (
-              <tr key={`${applicant.idNumber}-${index}`} className="border-b border-neutral-200">
-                <td className="px-3 py-2">{applicant.name}</td>
-                <td className="px-3 py-2">{applicant.idNumber}</td>
-                <td className="px-3 py-2">{applicant.passportNumber}</td>
-                {applicants.some((a) => a.acknowledgmentNumber) ? (
-                  <td className="px-3 py-2">{applicant.acknowledgmentNumber ?? '—'}</td>
-                ) : null}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function ApplicantSignaturesSection({ applicants }: { applicants: TripartiteApplicant[] }) {
-  return (
-    <div className="mt-8 space-y-6">
-      {applicants.map((applicant, index) => (
-        <div key={`sig-${applicant.idNumber}-${index}`}>
-          <div className="sig-row flex flex-wrap justify-between gap-4">
-            <SignatureDisplay label="Sign:" signature={applicant.signature} />
-          </div>
-          <div className="sig-row mt-2 flex flex-wrap gap-4">
-            <div className="flex flex-1 flex-wrap items-baseline gap-2">
-              <span className="font-bold">Name of the Migrant Worker:</span>
-              <span className="inline-block min-w-[280px] border-b border-dotted border-black px-1">
-                {applicant.name || '__________________________'}
-              </span>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export const TripartiteAgreementDocument: FC<TripartiteAgreementDocumentProps> = ({
   migrantName,
   idNumber,
   passportNumber,
   migrantSignature = null,
-  applicants,
   labourPsSignature = null,
   labourPsSignedAt = null,
   msmePsSignature = null,
@@ -277,61 +210,53 @@ export const TripartiteAgreementDocument: FC<TripartiteAgreementDocumentProps> =
       <span className="agreement-section-title mb-2 mt-6 block font-bold underline">
         3. LABOUR MIGRANTS
       </span>
-      {applicants && applicants.length > 0 ? (
-        <ApplicantListSection applicants={applicants} />
-      ) : (
-        <div className="mb-4 flex flex-wrap items-baseline gap-x-1 gap-y-2">
-          <span>I</span>
-          {readOnly ? (
-            <>
-              <span className="inline-block min-w-[300px] border-b border-dotted border-black px-1">
-                {migrantName}
-              </span>
-              <span>ID No</span>
-              <span className="inline-block w-[120px] border-b border-dotted border-black px-1">
-                {idNumber}
-              </span>
-              <span>Passport no.</span>
-              <span className="inline-block w-[150px] border-b border-dotted border-black px-1">
-                {passportNumber}
-              </span>
-            </>
-          ) : (
-            <>
-              <input
-                type="text"
-                name="migrantName"
-                placeholder="Full Name"
-                defaultValue={migrantName}
-                onChange={(event) => onMigrantNameChange?.(event.target.value)}
-                required
-                className="doc-input min-w-[300px]"
-              />
-              <span>ID No</span>
-              <input
-                type="text"
-                name="idNumber"
-                defaultValue={idNumber}
-                required
-                className="doc-input w-[120px]"
-              />
-              <span>Passport no.</span>
-              <input
-                type="text"
-                name="passportNumber"
-                defaultValue={passportNumber}
-                required
-                className="doc-input w-[150px]"
-              />
-            </>
-          )}
-          <span>is responsible for;</span>
-        </div>
-      )}
-
-      {applicants && applicants.length > 0 ? (
-        <p className="mb-2">The above labour migrants are responsible for;</p>
-      ) : null}
+      <div className="mb-4 flex flex-wrap items-baseline gap-x-1 gap-y-2">
+        <span>I</span>
+        {readOnly ? (
+          <>
+            <span className="inline-block min-w-[300px] border-b border-dotted border-black px-1">
+              {migrantName}
+            </span>
+            <span>ID No</span>
+            <span className="inline-block w-[120px] border-b border-dotted border-black px-1">
+              {idNumber}
+            </span>
+            <span>Passport no.</span>
+            <span className="inline-block w-[150px] border-b border-dotted border-black px-1">
+              {passportNumber}
+            </span>
+          </>
+        ) : (
+          <>
+            <input
+              type="text"
+              name="migrantName"
+              placeholder="Full Name"
+              defaultValue={migrantName}
+              onChange={(event) => onMigrantNameChange?.(event.target.value)}
+              required
+              className="doc-input min-w-[300px]"
+            />
+            <span>ID No</span>
+            <input
+              type="text"
+              name="idNumber"
+              defaultValue={idNumber}
+              required
+              className="doc-input w-[120px]"
+            />
+            <span>Passport no.</span>
+            <input
+              type="text"
+              name="passportNumber"
+              defaultValue={passportNumber}
+              required
+              className="doc-input w-[150px]"
+            />
+          </>
+        )}
+        <span>is responsible for;</span>
+      </div>
 
       <ol className="list-roman mb-4 list-[lower-roman] pl-10">
         <li className="mb-2">
@@ -354,25 +279,19 @@ export const TripartiteAgreementDocument: FC<TripartiteAgreementDocumentProps> =
         </li>
       </ol>
 
-      {applicants && applicants.length > 0 ? (
-        <ApplicantSignaturesSection applicants={applicants} />
-      ) : (
-        <>
-          <div className="sig-row mt-8 flex flex-wrap justify-between gap-4">
-            <SignatureDisplay label="Sign:" signature={migrantSignature} />
-            <DateDisplay date={currentDate} />
-          </div>
+      <div className="sig-row mt-8 flex flex-wrap justify-between gap-4">
+        <SignatureDisplay label="Sign:" signature={migrantSignature} />
+        <DateDisplay date={currentDate} />
+      </div>
 
-          <div className="sig-row mt-4 flex flex-wrap gap-4">
-            <div className="flex flex-1 flex-wrap items-baseline gap-2">
-              <span className="font-bold">Name of the Migrant Worker:</span>
-              <span className="inline-block min-w-[350px] border-b border-dotted border-black px-1">
-                {migrantName || '__________________________'}
-              </span>
-            </div>
-          </div>
-        </>
-      )}
+      <div className="sig-row mt-4 flex flex-wrap gap-4">
+        <div className="flex flex-1 flex-wrap items-baseline gap-2">
+          <span className="font-bold">Name of the Migrant Worker:</span>
+          <span className="inline-block min-w-[350px] border-b border-dotted border-black px-1">
+            {migrantName || '__________________________'}
+          </span>
+        </div>
+      </div>
     </div>
   );
 };

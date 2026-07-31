@@ -4,10 +4,6 @@ import {
   getPsPendingApplications,
   getPsSignedApplications,
 } from '@/lib/data/ps-applications';
-import {
-  getTripartiteSigningStatus,
-  getTripartiteSigningStatusLabel,
-} from '@/lib/data/tripartite-applicants';
 import { getSessionUser } from '@/lib/auth/session';
 import { isPsRole } from '@/lib/auth/roles';
 import { Badge } from '@workspace/ui/components/badge';
@@ -28,19 +24,6 @@ type PsApplication = Prisma.IndividualApplicationGetPayload<{
 }>;
 
 type DashboardView = 'pending' | 'signed';
-
-function signingBadgeVariant(
-  status: ReturnType<typeof getTripartiteSigningStatus>,
-): 'secondary' | 'default' | 'outline' {
-  switch (status) {
-    case 'awaiting_msme':
-      return 'default';
-    case 'awaiting_labour':
-      return 'secondary';
-    case 'fully_signed':
-      return 'outline';
-  }
-}
 
 function ApplicationList({
   applications,
@@ -64,9 +47,7 @@ function ApplicationList({
         </h3>
         <p className="text-neutral-600">
           {isPending
-            ? psRole === UserRole.PS_LABOUR
-              ? 'Applications appear here after the MSME Principal Secretary has signed. MSME PS signs first, then agreements are forwarded to Labour PS.'
-              : 'When migrants submit individual applications, they will appear here for your review and signature.'
+            ? 'When migrants submit individual applications, they will appear here for your review and signature.'
             : 'Applications you have signed will appear here for future reference.'}
         </p>
       </Card>
@@ -75,67 +56,48 @@ function ApplicationList({
 
   return (
     <div className="grid gap-4">
-      {applications.map((application) => {
-        const tripartite = application.tripartite!;
-        const signingStatus = getTripartiteSigningStatus(tripartite);
-        const migrantSigned = Boolean(application.signature?.digitalSignature);
-
-        return (
-          <Link
-            key={application.id}
-            href={`/ps/applications/${application.id}/tripartite`}
-            className="block"
+      {applications.map((application) => (
+        <Link
+          key={application.id}
+          href={`/ps/applications/${application.id}/tripartite`}
+          className="block"
+        >
+          <Card
+            variant="success"
+            className="p-5 transition-colors hover:border-primary/40 hover:bg-primary/5"
           >
-            <Card
-              variant="success"
-              className="p-5 transition-colors hover:border-primary/40 hover:bg-primary/5"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-neutral-500">Application number</p>
-                  <p className="typo-h4">{application.acknowledgmentNumber}</p>
-                  <p className="mt-2 text-neutral-700">
-                    {tripartite.migrantName ?? application.member.name}
-                  </p>
-                  <p className="text-sm text-neutral-500">
-                    Group: {application.member.application.groupData?.groupName ?? '—'}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Badge variant={signingBadgeVariant(signingStatus)}>
-                      {getTripartiteSigningStatusLabel(signingStatus)}
-                    </Badge>
-                    <Badge variant={migrantSigned ? 'outline' : 'secondary'}>
-                      {migrantSigned ? 'Migrant signed' : 'Migrant signature pending'}
-                    </Badge>
-                  </div>
-                  {isPending ? (
-                    <p className="mt-3 text-sm text-neutral-600">
-                      ID {tripartite.idNumber} · Passport {tripartite.passportNumber || '—'}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="text-right text-sm text-neutral-500">
-                  {application.submittedAt ? (
-                    <p>Submitted {application.submittedAt.toLocaleDateString('en-KE')}</p>
-                  ) : null}
-                  {!isPending ? (
-                    <p className="mt-1">
-                      Signed{' '}
-                      {(psRole === UserRole.PS_LABOUR
-                        ? tripartite.labourPsSignedAt
-                        : tripartite.msmePsSignedAt
-                      )?.toLocaleDateString('en-KE') ?? '—'}
-                    </p>
-                  ) : null}
-                  <p className="mt-2 font-medium text-primary">
-                    {isPending ? 'Review & sign →' : 'View agreement →'}
-                  </p>
-                </div>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-neutral-500">Application number</p>
+                <p className="typo-h4">{application.acknowledgmentNumber}</p>
+                <p className="mt-2 text-neutral-700">
+                  {application.tripartite?.migrantName ?? application.member.name}
+                </p>
+                <p className="text-sm text-neutral-500">
+                  Group: {application.member.application.groupData?.groupName ?? '—'}
+                </p>
               </div>
-            </Card>
-          </Link>
-        );
-      })}
+              <div className="text-right text-sm text-neutral-500">
+                {application.submittedAt ? (
+                  <p>Submitted {application.submittedAt.toLocaleDateString('en-KE')}</p>
+                ) : null}
+                {!isPending && application.tripartite ? (
+                  <p className="mt-1">
+                    Signed{' '}
+                    {(psRole === UserRole.PS_LABOUR
+                      ? application.tripartite.labourPsSignedAt
+                      : application.tripartite.msmePsSignedAt
+                    )?.toLocaleDateString('en-KE') ?? '—'}
+                  </p>
+                ) : null}
+                <p className="mt-2 font-medium text-primary">
+                  {isPending ? 'Review & sign →' : 'View agreement →'}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -166,9 +128,7 @@ export default async function PsDashboardPage({
       <div className="mb-6">
         <h2 className="typo-h2">Tripartite agreements</h2>
         <p className="typo-body-medium text-neutral-600">
-          {user.role === UserRole.PS_MSME
-            ? 'Review pending agreements and sign first. After MSME signing, agreements are forwarded to Labour PS.'
-            : 'Review agreements forwarded after MSME PS signing, or view applications you have already signed.'}
+          Review and sign pending agreements, or view applications you have already signed.
         </p>
       </div>
 
