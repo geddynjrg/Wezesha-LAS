@@ -1,7 +1,7 @@
 # PS Tripartite Agreement Refactor
 
 **Date:** 2026-07-31  
-**Commit:** `1f66c5c`  
+**Commit:** `c564473`  
 **Repository:** Wezesha-LAS (`portal/`)
 
 ## Summary
@@ -64,7 +64,7 @@ Labour PS signs → fully signed (both PS roles see in Signed tab)
    ```
 2. Revert the commit (replace `<commit-hash>` with the hash from step 1):
    ```bash
-   git revert 1f66c5c --no-edit
+   git revert c564473 --no-edit
    ```
 3. Rebuild and restart the portal container:
    ```bash
