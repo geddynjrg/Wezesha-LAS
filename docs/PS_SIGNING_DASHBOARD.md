@@ -104,4 +104,4 @@ URL: `/ps/signing/applications/cms4wq2zb009mk701j38xt47j`
 ## Commits
 
 - Introduced in: `e6aae10`
-- UI aligned to old dashboard + MSME-first bottom signing: see latest commit on branch
+- UI aligned to old dashboard + MSME-first bottom signing: `4229652`
