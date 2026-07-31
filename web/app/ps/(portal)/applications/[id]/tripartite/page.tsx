@@ -1,4 +1,5 @@
 import { PsTripartiteForm } from '@/app/ps/(portal)/applications/[id]/tripartite/ps-tripartite-form';
+import { getTripartiteApplicantsForApplication } from '@/lib/data/tripartite-applicants';
 import { getPsApplicationById } from '@/lib/data/ps-applications';
 import { getSessionUser } from '@/lib/auth/session';
 import { isPsRole } from '@/lib/auth/roles';
@@ -16,7 +17,11 @@ export default async function PsTripartitePage({
     redirect('/ps/sign-in');
   }
 
-  const application = await getPsApplicationById(id);
+  const [application, applicants] = await Promise.all([
+    getPsApplicationById(id),
+    getTripartiteApplicantsForApplication(id),
+  ]);
+
   if (!application?.tripartite || !application.tripartiteAccepted) {
     notFound();
   }
@@ -29,6 +34,13 @@ export default async function PsTripartitePage({
       migrantName={application.tripartite.migrantName}
       idNumber={application.tripartite.idNumber}
       passportNumber={application.tripartite.passportNumber}
+      applicants={applicants.map((applicant) => ({
+        name: applicant.name,
+        idNumber: applicant.idNumber,
+        passportNumber: applicant.passportNumber,
+        signature: applicant.signature,
+        acknowledgmentNumber: applicant.acknowledgmentNumber,
+      }))}
       migrantSignature={application.signature?.digitalSignature ?? null}
       labourPsSignature={application.tripartite.labourPsSignature}
       labourPsSignedAt={application.tripartite.labourPsSignedAt}
