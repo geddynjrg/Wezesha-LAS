@@ -10,7 +10,7 @@ import { type NextRequest, NextResponse, userAgent } from 'next/server';
 
 const applicantProtectedRoutes = ['/apply', '/dashboard'];
 const applicantPublicRoutes = ['/login', '/signup', '/ecitizen'];
-const psProtectedRoutes = ['/ps/dashboard', '/ps/applications', '/ps/profile', '/ps/help'];
+const psProtectedRoutes = ['/ps/dashboard', '/ps/signing', '/ps/applications', '/ps/profile', '/ps/help'];
 const psPublicRoutes = ['/ps/sign-in'];
 const PS_ROLES = new Set(['PS_LABOUR', 'PS_MSME']);
 

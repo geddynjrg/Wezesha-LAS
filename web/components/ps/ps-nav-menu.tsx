@@ -13,7 +13,8 @@ import { usePathname } from 'next/navigation';
 import type { FC } from 'react';
 
 const MENU_ITEMS = [
-  { href: '/ps/dashboard', label: 'Dashboard', match: (path: string) => path.startsWith('/ps/dashboard') || path.startsWith('/ps/applications') },
+  { href: '/ps/dashboard', label: 'Dashboard', match: (path: string) => path.startsWith('/ps/dashboard') || (path.startsWith('/ps/applications') && !path.startsWith('/ps/signing')) },
+  { href: '/ps/signing', label: 'Tripartite signing', match: (path: string) => path.startsWith('/ps/signing') },
   { href: '/ps/help', label: 'Help', match: (path: string) => path.startsWith('/ps/help') },
 ] as const;
 
