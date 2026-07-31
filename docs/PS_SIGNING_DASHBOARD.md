@@ -109,3 +109,4 @@ URL: `/ps/signing/applications/cms4wq2zb009mk701j38xt47j`
 
 - Introduced in: `e6aae10`
 - UI aligned to old dashboard + MSME-first bottom signing: `4229652`
+- MSME batch sign at bottom of pending list: `c029625`
