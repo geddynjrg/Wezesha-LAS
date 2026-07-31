@@ -7,13 +7,9 @@ import {
 } from '@/components/tripartite/tripartite-agreement-document';
 import { psSignSchema } from '@/app/ps/sign-in/ps-login-schema';
 import { UserRole } from '@/generated/prisma';
-import {
-  getTripartiteSigningStatus,
-  getTripartiteSigningStatusLabel,
-} from '@/lib/data/tripartite-applicants';
+import { getTripartiteSigningStatus } from '@/lib/data/tripartite-applicants';
 import { canPsSignTripartite, hasPsSigned } from '@/lib/tripartite/ps-signing-workflow';
 import { Alert } from '@workspace/ui/components/alert';
-import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
 import { Container } from '@workspace/ui/components/container';
 import { Form } from '@workspace/ui/components/form';
@@ -66,22 +62,13 @@ export const PsSigningTripartiteForm: FC<PsSigningTripartiteFormProps> = ({
   const signingStatus = getTripartiteSigningStatus(tripartite);
   const alreadySigned = hasPsSigned(psRole, tripartite);
   const signEligibility = canPsSignTripartite(psRole, tripartite);
+  const awaitingMsmeForLabour =
+    psRole === UserRole.PS_LABOUR && signingStatus === 'awaiting_msme';
 
   const roleTitle =
     psRole === UserRole.PS_LABOUR
       ? 'Labour & Skills Development'
       : 'Micro Small and Medium Enterprise Development';
-
-  const workflowMessage =
-    psRole === UserRole.PS_MSME
-      ? signingStatus === 'awaiting_msme'
-        ? 'You are the first signatory. After you sign, this agreement will be forwarded to the Labour Principal Secretary.'
-        : 'MSME signing is complete. Labour PS may now sign if they have not already.'
-      : signingStatus === 'awaiting_msme'
-        ? 'This agreement is awaiting signature from the MSME Principal Secretary before you can sign.'
-        : signingStatus === 'awaiting_labour'
-          ? 'MSME PS has signed. You may now append your signature as Labour Principal Secretary.'
-          : 'Both Principal Secretaries have signed this agreement.';
 
   return (
     <Container className="py-8">
@@ -91,24 +78,16 @@ export const PsSigningTripartiteForm: FC<PsSigningTripartiteFormProps> = ({
           <h2 className="typo-h2">Tripartite Agreement</h2>
           <p className="typo-body-medium text-neutral-600">
             {alreadySigned
-              ? `View the agreement including your signature as Principal Secretary – ${roleTitle}.`
-              : `Review the agreement as submitted by the applicant(s) and append your signature as Principal Secretary – ${roleTitle}.`}
+              ? `View the fully signed agreement including your signature as Principal Secretary – ${roleTitle}.`
+              : awaitingMsmeForLabour
+                ? `Review the agreement below. Signing will be available once the MSME Principal Secretary has signed.`
+                : `Review the agreement below and append your signature as Principal Secretary – ${roleTitle}.`}
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{getTripartiteSigningStatusLabel(signingStatus)}</Badge>
-            <span className="text-sm text-neutral-600">
-              {applicants.length} applicant{applicants.length === 1 ? '' : 's'} in group
-            </span>
-          </div>
         </div>
         <Button variant="secondary" asChild>
-          <Link href="/ps/signing">Back to signing dashboard</Link>
+          <Link href="/ps/signing">Back to dashboard</Link>
         </Button>
       </div>
-
-      <Alert variant={signingStatus === 'fully_signed' ? 'success' : 'info'} className="mb-6">
-        {workflowMessage}
-      </Alert>
 
       <FormCard title="Agreement document">
         <TripartiteAgreementDocument
@@ -129,7 +108,11 @@ export const PsSigningTripartiteForm: FC<PsSigningTripartiteFormProps> = ({
       {alreadySigned ? (
         <Alert variant="success" className="mt-6">
           Your signature has been recorded on this agreement. Both Principal Secretaries may view the
-          document here.
+          fully signed document here.
+        </Alert>
+      ) : awaitingMsmeForLabour ? (
+        <Alert variant="info" className="mt-6">
+          Awaiting MSME PS signature
         </Alert>
       ) : signEligibility.allowed ? (
         <Form action={formAction} className="mt-6">
