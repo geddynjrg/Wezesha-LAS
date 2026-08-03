@@ -95,3 +95,22 @@ export async function countPsSigningSignedApplications(role: UserRole) {
     where: signedSigningFilter(role),
   });
 }
+
+export function mapPsSigningApplicationsToMigrantRows(
+  applications: Prisma.IndividualApplicationGetPayload<{
+    include: {
+      member: { include: { application: { include: { groupData: true } } } };
+      tripartite: true;
+      signature: true;
+    };
+  }>[],
+) {
+  return applications.map((application) => ({
+    applicationId: application.id,
+    name: application.tripartite?.migrantName ?? application.member.name,
+    idNumber: application.tripartite?.idNumber ?? '',
+    passportNumber: application.tripartite?.passportNumber ?? '',
+    acknowledgmentNumber: application.acknowledgmentNumber,
+    groupName: application.member.application.groupData?.groupName ?? '—',
+  }));
+}

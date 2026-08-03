@@ -24,8 +24,9 @@ export const PsSigningBatchForm: FC<PsSigningBatchFormProps> = ({ pendingCount }
     <Form action={formAction} className="mt-6">
       <FormCard title="Append your signature">
         <p className="mb-4 text-neutral-600">
-          Review the agreements above, then sign once below to forward all {pendingCount} pending
-          agreement{pendingCount === 1 ? '' : 's'} to the Labour Principal Secretary for signature.
+          Review the agreement template and migrant list above, then sign once below to forward all{' '}
+          {pendingCount} pending agreement{pendingCount === 1 ? '' : 's'} to the Labour Principal
+          Secretary for signature.
         </p>
 
         {state.message ? (

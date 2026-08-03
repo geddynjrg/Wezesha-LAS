@@ -82,6 +82,8 @@ export interface TripartiteAgreementDocumentProps {
   msmePsSignedAt?: Date | string | null;
   agreementDate?: string;
   readOnly?: boolean;
+  /** Blank agreement template: sections 1–2 with placeholders; section 3 without migrant names/signatures. */
+  templateMode?: boolean;
   onMigrantNameChange?: (name: string) => void;
 }
 
@@ -160,6 +162,48 @@ function MigrantSignBlock({
   );
 }
 
+function TemplateSection3({ agreementDate }: { agreementDate: string }) {
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap items-baseline gap-x-1 gap-y-2">
+        <span>I</span>
+        <span className="inline-block min-w-[300px] border-b border-dotted border-black px-1">
+          __________________________
+        </span>
+        <span>ID No</span>
+        <span className="inline-block w-[120px] border-b border-dotted border-black px-1">
+          __________
+        </span>
+        <span>Passport no.</span>
+        <span className="inline-block w-[150px] border-b border-dotted border-black px-1">
+          __________
+        </span>
+        <span>is responsible for;</span>
+      </div>
+
+      {MIGRANT_RESPONSIBILITIES}
+
+      <div className="sig-row mt-8 flex flex-wrap justify-between gap-4">
+        <SignaturePlaceholder label="Sign:" />
+        <DateDisplay date={agreementDate} />
+      </div>
+
+      <div className="sig-row mt-4 flex flex-wrap gap-4">
+        <div className="flex flex-1 flex-wrap items-baseline gap-2">
+          <span className="font-bold">Name of the Migrant Worker:</span>
+          <span className="inline-block min-w-[350px] border-b border-dotted border-black px-1">
+            __________________________
+          </span>
+        </div>
+      </div>
+
+      <p className="mt-4 text-sm italic text-neutral-600">
+        Migrant worker details are listed in the table below.
+      </p>
+    </>
+  );
+}
+
 function PsGroupSection3({
   applicants,
   agreementDate,
@@ -212,6 +256,7 @@ export const TripartiteAgreementDocument: FC<TripartiteAgreementDocumentProps> =
   msmePsSignedAt = null,
   agreementDate,
   readOnly = false,
+  templateMode = false,
   onMigrantNameChange,
 }) => {
   const currentDate = agreementDate ?? formatAgreementDate(new Date());
@@ -338,7 +383,9 @@ export const TripartiteAgreementDocument: FC<TripartiteAgreementDocumentProps> =
       <span className="agreement-section-title mb-2 mt-6 block font-bold underline">
         3. LABOUR MIGRANTS
       </span>
-      {psGroupSection3 && applicants && applicants.length > 0 ? (
+      {templateMode ? (
+        <TemplateSection3 agreementDate={currentDate} />
+      ) : psGroupSection3 && applicants && applicants.length > 0 ? (
         <PsGroupSection3 applicants={applicants} agreementDate={currentDate} />
       ) : (
         <>
