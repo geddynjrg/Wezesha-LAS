@@ -130,6 +130,7 @@ exports.Prisma.UserScalarFieldEnum = {
   kraPin: 'kraPin',
   ecitizenId: 'ecitizenId',
   identifierType: 'identifierType',
+  role: 'role',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -371,7 +372,13 @@ exports.Prisma.TripartiteDataScalarFieldEnum = {
   applicationId: 'applicationId',
   migrantName: 'migrantName',
   idNumber: 'idNumber',
-  passportNumber: 'passportNumber'
+  passportNumber: 'passportNumber',
+  labourPsSignature: 'labourPsSignature',
+  labourPsSignedAt: 'labourPsSignedAt',
+  labourPsSignedBy: 'labourPsSignedBy',
+  msmePsSignature: 'msmePsSignature',
+  msmePsSignedAt: 'msmePsSignedAt',
+  msmePsSignedBy: 'msmePsSignedBy'
 };
 
 exports.Prisma.ApplicationDocumentScalarFieldEnum = {
@@ -602,7 +609,11 @@ exports.Prisma.TripartiteDataOrderByRelevanceFieldEnum = {
   applicationId: 'applicationId',
   migrantName: 'migrantName',
   idNumber: 'idNumber',
-  passportNumber: 'passportNumber'
+  passportNumber: 'passportNumber',
+  labourPsSignature: 'labourPsSignature',
+  labourPsSignedBy: 'labourPsSignedBy',
+  msmePsSignature: 'msmePsSignature',
+  msmePsSignedBy: 'msmePsSignedBy'
 };
 
 exports.Prisma.ApplicationDocumentOrderByRelevanceFieldEnum = {
@@ -630,6 +641,12 @@ exports.IdentifierType = exports.$Enums.IdentifierType = {
   EMAIL: 'EMAIL',
   PHONE: 'PHONE',
   ECITIZEN: 'ECITIZEN'
+};
+
+exports.UserRole = exports.$Enums.UserRole = {
+  APPLICANT: 'APPLICANT',
+  PS_LABOUR: 'PS_LABOUR',
+  PS_MSME: 'PS_MSME'
 };
 
 exports.ApplicationStatus = exports.$Enums.ApplicationStatus = {

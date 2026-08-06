@@ -192,6 +192,15 @@ export const IdentifierType: {
 
 export type IdentifierType = (typeof IdentifierType)[keyof typeof IdentifierType]
 
+
+export const UserRole: {
+  APPLICANT: 'APPLICANT',
+  PS_LABOUR: 'PS_LABOUR',
+  PS_MSME: 'PS_MSME'
+};
+
+export type UserRole = (typeof UserRole)[keyof typeof UserRole]
+
 }
 
 export type ApplicationPhase = $Enums.ApplicationPhase
@@ -213,6 +222,10 @@ export const GuarantorOtpStatus: typeof $Enums.GuarantorOtpStatus
 export type IdentifierType = $Enums.IdentifierType
 
 export const IdentifierType: typeof $Enums.IdentifierType
+
+export type UserRole = $Enums.UserRole
+
+export const UserRole: typeof $Enums.UserRole
 
 /**
  * ##  Prisma Client ʲˢ
@@ -3187,6 +3200,7 @@ export namespace Prisma {
     kraPin: string | null
     ecitizenId: string | null
     identifierType: $Enums.IdentifierType | null
+    role: $Enums.UserRole | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -3201,6 +3215,7 @@ export namespace Prisma {
     kraPin: string | null
     ecitizenId: string | null
     identifierType: $Enums.IdentifierType | null
+    role: $Enums.UserRole | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -3215,6 +3230,7 @@ export namespace Prisma {
     kraPin: number
     ecitizenId: number
     identifierType: number
+    role: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -3231,6 +3247,7 @@ export namespace Prisma {
     kraPin?: true
     ecitizenId?: true
     identifierType?: true
+    role?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -3245,6 +3262,7 @@ export namespace Prisma {
     kraPin?: true
     ecitizenId?: true
     identifierType?: true
+    role?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -3259,6 +3277,7 @@ export namespace Prisma {
     kraPin?: true
     ecitizenId?: true
     identifierType?: true
+    role?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -3346,6 +3365,7 @@ export namespace Prisma {
     kraPin: string | null
     ecitizenId: string | null
     identifierType: $Enums.IdentifierType
+    role: $Enums.UserRole
     createdAt: Date
     updatedAt: Date
     _count: UserCountAggregateOutputType | null
@@ -3377,6 +3397,7 @@ export namespace Prisma {
     kraPin?: boolean
     ecitizenId?: boolean
     identifierType?: boolean
+    role?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
@@ -3397,11 +3418,12 @@ export namespace Prisma {
     kraPin?: boolean
     ecitizenId?: boolean
     identifierType?: boolean
+    role?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "phoneNumber" | "passwordHash" | "name" | "idNumber" | "kraPin" | "ecitizenId" | "identifierType" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "phoneNumber" | "passwordHash" | "name" | "idNumber" | "kraPin" | "ecitizenId" | "identifierType" | "role" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
     otpRequests?: boolean | User$otpRequestsArgs<ExtArgs>
@@ -3426,6 +3448,7 @@ export namespace Prisma {
       kraPin: string | null
       ecitizenId: string | null
       identifierType: $Enums.IdentifierType
+      role: $Enums.UserRole
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["user"]>
@@ -3809,6 +3832,7 @@ export namespace Prisma {
     readonly kraPin: FieldRef<"User", 'String'>
     readonly ecitizenId: FieldRef<"User", 'String'>
     readonly identifierType: FieldRef<"User", 'IdentifierType'>
+    readonly role: FieldRef<"User", 'UserRole'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
   }
@@ -23591,6 +23615,12 @@ export namespace Prisma {
     migrantName: string | null
     idNumber: string | null
     passportNumber: string | null
+    labourPsSignature: string | null
+    labourPsSignedAt: Date | null
+    labourPsSignedBy: string | null
+    msmePsSignature: string | null
+    msmePsSignedAt: Date | null
+    msmePsSignedBy: string | null
   }
 
   export type TripartiteDataMaxAggregateOutputType = {
@@ -23599,6 +23629,12 @@ export namespace Prisma {
     migrantName: string | null
     idNumber: string | null
     passportNumber: string | null
+    labourPsSignature: string | null
+    labourPsSignedAt: Date | null
+    labourPsSignedBy: string | null
+    msmePsSignature: string | null
+    msmePsSignedAt: Date | null
+    msmePsSignedBy: string | null
   }
 
   export type TripartiteDataCountAggregateOutputType = {
@@ -23607,6 +23643,12 @@ export namespace Prisma {
     migrantName: number
     idNumber: number
     passportNumber: number
+    labourPsSignature: number
+    labourPsSignedAt: number
+    labourPsSignedBy: number
+    msmePsSignature: number
+    msmePsSignedAt: number
+    msmePsSignedBy: number
     _all: number
   }
 
@@ -23617,6 +23659,12 @@ export namespace Prisma {
     migrantName?: true
     idNumber?: true
     passportNumber?: true
+    labourPsSignature?: true
+    labourPsSignedAt?: true
+    labourPsSignedBy?: true
+    msmePsSignature?: true
+    msmePsSignedAt?: true
+    msmePsSignedBy?: true
   }
 
   export type TripartiteDataMaxAggregateInputType = {
@@ -23625,6 +23673,12 @@ export namespace Prisma {
     migrantName?: true
     idNumber?: true
     passportNumber?: true
+    labourPsSignature?: true
+    labourPsSignedAt?: true
+    labourPsSignedBy?: true
+    msmePsSignature?: true
+    msmePsSignedAt?: true
+    msmePsSignedBy?: true
   }
 
   export type TripartiteDataCountAggregateInputType = {
@@ -23633,6 +23687,12 @@ export namespace Prisma {
     migrantName?: true
     idNumber?: true
     passportNumber?: true
+    labourPsSignature?: true
+    labourPsSignedAt?: true
+    labourPsSignedBy?: true
+    msmePsSignature?: true
+    msmePsSignedAt?: true
+    msmePsSignedBy?: true
     _all?: true
   }
 
@@ -23714,6 +23774,12 @@ export namespace Prisma {
     migrantName: string
     idNumber: string
     passportNumber: string
+    labourPsSignature: string | null
+    labourPsSignedAt: Date | null
+    labourPsSignedBy: string | null
+    msmePsSignature: string | null
+    msmePsSignedAt: Date | null
+    msmePsSignedBy: string | null
     _count: TripartiteDataCountAggregateOutputType | null
     _min: TripartiteDataMinAggregateOutputType | null
     _max: TripartiteDataMaxAggregateOutputType | null
@@ -23739,6 +23805,12 @@ export namespace Prisma {
     migrantName?: boolean
     idNumber?: boolean
     passportNumber?: boolean
+    labourPsSignature?: boolean
+    labourPsSignedAt?: boolean
+    labourPsSignedBy?: boolean
+    msmePsSignature?: boolean
+    msmePsSignedAt?: boolean
+    msmePsSignedBy?: boolean
     application?: boolean | IndividualApplicationDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tripartiteData"]>
 
@@ -23750,9 +23822,15 @@ export namespace Prisma {
     migrantName?: boolean
     idNumber?: boolean
     passportNumber?: boolean
+    labourPsSignature?: boolean
+    labourPsSignedAt?: boolean
+    labourPsSignedBy?: boolean
+    msmePsSignature?: boolean
+    msmePsSignedAt?: boolean
+    msmePsSignedBy?: boolean
   }
 
-  export type TripartiteDataOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "applicationId" | "migrantName" | "idNumber" | "passportNumber", ExtArgs["result"]["tripartiteData"]>
+  export type TripartiteDataOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "applicationId" | "migrantName" | "idNumber" | "passportNumber" | "labourPsSignature" | "labourPsSignedAt" | "labourPsSignedBy" | "msmePsSignature" | "msmePsSignedAt" | "msmePsSignedBy", ExtArgs["result"]["tripartiteData"]>
   export type TripartiteDataInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     application?: boolean | IndividualApplicationDefaultArgs<ExtArgs>
   }
@@ -23768,6 +23846,12 @@ export namespace Prisma {
       migrantName: string
       idNumber: string
       passportNumber: string
+      labourPsSignature: string | null
+      labourPsSignedAt: Date | null
+      labourPsSignedBy: string | null
+      msmePsSignature: string | null
+      msmePsSignedAt: Date | null
+      msmePsSignedBy: string | null
     }, ExtArgs["result"]["tripartiteData"]>
     composites: {}
   }
@@ -24143,6 +24227,12 @@ export namespace Prisma {
     readonly migrantName: FieldRef<"TripartiteData", 'String'>
     readonly idNumber: FieldRef<"TripartiteData", 'String'>
     readonly passportNumber: FieldRef<"TripartiteData", 'String'>
+    readonly labourPsSignature: FieldRef<"TripartiteData", 'String'>
+    readonly labourPsSignedAt: FieldRef<"TripartiteData", 'DateTime'>
+    readonly labourPsSignedBy: FieldRef<"TripartiteData", 'String'>
+    readonly msmePsSignature: FieldRef<"TripartiteData", 'String'>
+    readonly msmePsSignedAt: FieldRef<"TripartiteData", 'DateTime'>
+    readonly msmePsSignedBy: FieldRef<"TripartiteData", 'String'>
   }
     
 
@@ -28408,6 +28498,7 @@ export namespace Prisma {
     kraPin: 'kraPin',
     ecitizenId: 'ecitizenId',
     identifierType: 'identifierType',
+    role: 'role',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -28709,7 +28800,13 @@ export namespace Prisma {
     applicationId: 'applicationId',
     migrantName: 'migrantName',
     idNumber: 'idNumber',
-    passportNumber: 'passportNumber'
+    passportNumber: 'passportNumber',
+    labourPsSignature: 'labourPsSignature',
+    labourPsSignedAt: 'labourPsSignedAt',
+    labourPsSignedBy: 'labourPsSignedBy',
+    msmePsSignature: 'msmePsSignature',
+    msmePsSignedAt: 'msmePsSignedAt',
+    msmePsSignedBy: 'msmePsSignedBy'
   };
 
   export type TripartiteDataScalarFieldEnum = (typeof TripartiteDataScalarFieldEnum)[keyof typeof TripartiteDataScalarFieldEnum]
@@ -29021,7 +29118,11 @@ export namespace Prisma {
     applicationId: 'applicationId',
     migrantName: 'migrantName',
     idNumber: 'idNumber',
-    passportNumber: 'passportNumber'
+    passportNumber: 'passportNumber',
+    labourPsSignature: 'labourPsSignature',
+    labourPsSignedBy: 'labourPsSignedBy',
+    msmePsSignature: 'msmePsSignature',
+    msmePsSignedBy: 'msmePsSignedBy'
   };
 
   export type TripartiteDataOrderByRelevanceFieldEnum = (typeof TripartiteDataOrderByRelevanceFieldEnum)[keyof typeof TripartiteDataOrderByRelevanceFieldEnum]
@@ -29077,6 +29178,13 @@ export namespace Prisma {
    * Reference to a field of type 'IdentifierType'
    */
   export type EnumIdentifierTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IdentifierType'>
+    
+
+
+  /**
+   * Reference to a field of type 'UserRole'
+   */
+  export type EnumUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserRole'>
     
 
 
@@ -29159,6 +29267,7 @@ export namespace Prisma {
     kraPin?: StringNullableFilter<"User"> | string | null
     ecitizenId?: StringNullableFilter<"User"> | string | null
     identifierType?: EnumIdentifierTypeFilter<"User"> | $Enums.IdentifierType
+    role?: EnumUserRoleFilter<"User"> | $Enums.UserRole
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     refreshTokens?: RefreshTokenListRelationFilter
@@ -29176,6 +29285,7 @@ export namespace Prisma {
     kraPin?: SortOrderInput | SortOrder
     ecitizenId?: SortOrderInput | SortOrder
     identifierType?: SortOrder
+    role?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     refreshTokens?: RefreshTokenOrderByRelationAggregateInput
@@ -29197,6 +29307,7 @@ export namespace Prisma {
     name?: StringNullableFilter<"User"> | string | null
     kraPin?: StringNullableFilter<"User"> | string | null
     identifierType?: EnumIdentifierTypeFilter<"User"> | $Enums.IdentifierType
+    role?: EnumUserRoleFilter<"User"> | $Enums.UserRole
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     refreshTokens?: RefreshTokenListRelationFilter
@@ -29214,6 +29325,7 @@ export namespace Prisma {
     kraPin?: SortOrderInput | SortOrder
     ecitizenId?: SortOrderInput | SortOrder
     identifierType?: SortOrder
+    role?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
@@ -29234,6 +29346,7 @@ export namespace Prisma {
     kraPin?: StringNullableWithAggregatesFilter<"User"> | string | null
     ecitizenId?: StringNullableWithAggregatesFilter<"User"> | string | null
     identifierType?: EnumIdentifierTypeWithAggregatesFilter<"User"> | $Enums.IdentifierType
+    role?: EnumUserRoleWithAggregatesFilter<"User"> | $Enums.UserRole
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
   }
@@ -30782,6 +30895,12 @@ export namespace Prisma {
     migrantName?: StringFilter<"TripartiteData"> | string
     idNumber?: StringFilter<"TripartiteData"> | string
     passportNumber?: StringFilter<"TripartiteData"> | string
+    labourPsSignature?: StringNullableFilter<"TripartiteData"> | string | null
+    labourPsSignedAt?: DateTimeNullableFilter<"TripartiteData"> | Date | string | null
+    labourPsSignedBy?: StringNullableFilter<"TripartiteData"> | string | null
+    msmePsSignature?: StringNullableFilter<"TripartiteData"> | string | null
+    msmePsSignedAt?: DateTimeNullableFilter<"TripartiteData"> | Date | string | null
+    msmePsSignedBy?: StringNullableFilter<"TripartiteData"> | string | null
     application?: XOR<IndividualApplicationScalarRelationFilter, IndividualApplicationWhereInput>
   }
 
@@ -30791,6 +30910,12 @@ export namespace Prisma {
     migrantName?: SortOrder
     idNumber?: SortOrder
     passportNumber?: SortOrder
+    labourPsSignature?: SortOrderInput | SortOrder
+    labourPsSignedAt?: SortOrderInput | SortOrder
+    labourPsSignedBy?: SortOrderInput | SortOrder
+    msmePsSignature?: SortOrderInput | SortOrder
+    msmePsSignedAt?: SortOrderInput | SortOrder
+    msmePsSignedBy?: SortOrderInput | SortOrder
     application?: IndividualApplicationOrderByWithRelationInput
     _relevance?: TripartiteDataOrderByRelevanceInput
   }
@@ -30804,6 +30929,12 @@ export namespace Prisma {
     migrantName?: StringFilter<"TripartiteData"> | string
     idNumber?: StringFilter<"TripartiteData"> | string
     passportNumber?: StringFilter<"TripartiteData"> | string
+    labourPsSignature?: StringNullableFilter<"TripartiteData"> | string | null
+    labourPsSignedAt?: DateTimeNullableFilter<"TripartiteData"> | Date | string | null
+    labourPsSignedBy?: StringNullableFilter<"TripartiteData"> | string | null
+    msmePsSignature?: StringNullableFilter<"TripartiteData"> | string | null
+    msmePsSignedAt?: DateTimeNullableFilter<"TripartiteData"> | Date | string | null
+    msmePsSignedBy?: StringNullableFilter<"TripartiteData"> | string | null
     application?: XOR<IndividualApplicationScalarRelationFilter, IndividualApplicationWhereInput>
   }, "id" | "applicationId">
 
@@ -30813,6 +30944,12 @@ export namespace Prisma {
     migrantName?: SortOrder
     idNumber?: SortOrder
     passportNumber?: SortOrder
+    labourPsSignature?: SortOrderInput | SortOrder
+    labourPsSignedAt?: SortOrderInput | SortOrder
+    labourPsSignedBy?: SortOrderInput | SortOrder
+    msmePsSignature?: SortOrderInput | SortOrder
+    msmePsSignedAt?: SortOrderInput | SortOrder
+    msmePsSignedBy?: SortOrderInput | SortOrder
     _count?: TripartiteDataCountOrderByAggregateInput
     _max?: TripartiteDataMaxOrderByAggregateInput
     _min?: TripartiteDataMinOrderByAggregateInput
@@ -30827,6 +30964,12 @@ export namespace Prisma {
     migrantName?: StringWithAggregatesFilter<"TripartiteData"> | string
     idNumber?: StringWithAggregatesFilter<"TripartiteData"> | string
     passportNumber?: StringWithAggregatesFilter<"TripartiteData"> | string
+    labourPsSignature?: StringNullableWithAggregatesFilter<"TripartiteData"> | string | null
+    labourPsSignedAt?: DateTimeNullableWithAggregatesFilter<"TripartiteData"> | Date | string | null
+    labourPsSignedBy?: StringNullableWithAggregatesFilter<"TripartiteData"> | string | null
+    msmePsSignature?: StringNullableWithAggregatesFilter<"TripartiteData"> | string | null
+    msmePsSignedAt?: DateTimeNullableWithAggregatesFilter<"TripartiteData"> | Date | string | null
+    msmePsSignedBy?: StringNullableWithAggregatesFilter<"TripartiteData"> | string | null
   }
 
   export type ApplicationDocumentWhereInput = {
@@ -31057,6 +31200,7 @@ export namespace Prisma {
     kraPin?: string | null
     ecitizenId?: string | null
     identifierType?: $Enums.IdentifierType
+    role?: $Enums.UserRole
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
@@ -31074,6 +31218,7 @@ export namespace Prisma {
     kraPin?: string | null
     ecitizenId?: string | null
     identifierType?: $Enums.IdentifierType
+    role?: $Enums.UserRole
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
@@ -31091,6 +31236,7 @@ export namespace Prisma {
     kraPin?: NullableStringFieldUpdateOperationsInput | string | null
     ecitizenId?: NullableStringFieldUpdateOperationsInput | string | null
     identifierType?: EnumIdentifierTypeFieldUpdateOperationsInput | $Enums.IdentifierType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
@@ -31108,6 +31254,7 @@ export namespace Prisma {
     kraPin?: NullableStringFieldUpdateOperationsInput | string | null
     ecitizenId?: NullableStringFieldUpdateOperationsInput | string | null
     identifierType?: EnumIdentifierTypeFieldUpdateOperationsInput | $Enums.IdentifierType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
@@ -31125,6 +31272,7 @@ export namespace Prisma {
     kraPin?: string | null
     ecitizenId?: string | null
     identifierType?: $Enums.IdentifierType
+    role?: $Enums.UserRole
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -31139,6 +31287,7 @@ export namespace Prisma {
     kraPin?: NullableStringFieldUpdateOperationsInput | string | null
     ecitizenId?: NullableStringFieldUpdateOperationsInput | string | null
     identifierType?: EnumIdentifierTypeFieldUpdateOperationsInput | $Enums.IdentifierType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -31153,6 +31302,7 @@ export namespace Prisma {
     kraPin?: NullableStringFieldUpdateOperationsInput | string | null
     ecitizenId?: NullableStringFieldUpdateOperationsInput | string | null
     identifierType?: EnumIdentifierTypeFieldUpdateOperationsInput | $Enums.IdentifierType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -32840,6 +32990,12 @@ export namespace Prisma {
     migrantName: string
     idNumber: string
     passportNumber: string
+    labourPsSignature?: string | null
+    labourPsSignedAt?: Date | string | null
+    labourPsSignedBy?: string | null
+    msmePsSignature?: string | null
+    msmePsSignedAt?: Date | string | null
+    msmePsSignedBy?: string | null
     application: IndividualApplicationCreateNestedOneWithoutTripartiteInput
   }
 
@@ -32849,6 +33005,12 @@ export namespace Prisma {
     migrantName: string
     idNumber: string
     passportNumber: string
+    labourPsSignature?: string | null
+    labourPsSignedAt?: Date | string | null
+    labourPsSignedBy?: string | null
+    msmePsSignature?: string | null
+    msmePsSignedAt?: Date | string | null
+    msmePsSignedBy?: string | null
   }
 
   export type TripartiteDataUpdateInput = {
@@ -32856,6 +33018,12 @@ export namespace Prisma {
     migrantName?: StringFieldUpdateOperationsInput | string
     idNumber?: StringFieldUpdateOperationsInput | string
     passportNumber?: StringFieldUpdateOperationsInput | string
+    labourPsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    labourPsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    labourPsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    msmePsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     application?: IndividualApplicationUpdateOneRequiredWithoutTripartiteNestedInput
   }
 
@@ -32865,6 +33033,12 @@ export namespace Prisma {
     migrantName?: StringFieldUpdateOperationsInput | string
     idNumber?: StringFieldUpdateOperationsInput | string
     passportNumber?: StringFieldUpdateOperationsInput | string
+    labourPsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    labourPsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    labourPsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    msmePsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TripartiteDataCreateManyInput = {
@@ -32873,6 +33047,12 @@ export namespace Prisma {
     migrantName: string
     idNumber: string
     passportNumber: string
+    labourPsSignature?: string | null
+    labourPsSignedAt?: Date | string | null
+    labourPsSignedBy?: string | null
+    msmePsSignature?: string | null
+    msmePsSignedAt?: Date | string | null
+    msmePsSignedBy?: string | null
   }
 
   export type TripartiteDataUpdateManyMutationInput = {
@@ -32880,6 +33060,12 @@ export namespace Prisma {
     migrantName?: StringFieldUpdateOperationsInput | string
     idNumber?: StringFieldUpdateOperationsInput | string
     passportNumber?: StringFieldUpdateOperationsInput | string
+    labourPsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    labourPsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    labourPsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    msmePsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TripartiteDataUncheckedUpdateManyInput = {
@@ -32888,6 +33074,12 @@ export namespace Prisma {
     migrantName?: StringFieldUpdateOperationsInput | string
     idNumber?: StringFieldUpdateOperationsInput | string
     passportNumber?: StringFieldUpdateOperationsInput | string
+    labourPsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    labourPsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    labourPsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    msmePsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ApplicationDocumentCreateInput = {
@@ -33118,6 +33310,13 @@ export namespace Prisma {
     not?: NestedEnumIdentifierTypeFilter<$PrismaModel> | $Enums.IdentifierType
   }
 
+  export type EnumUserRoleFilter<$PrismaModel = never> = {
+    equals?: $Enums.UserRole | EnumUserRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.UserRole[]
+    notIn?: $Enums.UserRole[]
+    not?: NestedEnumUserRoleFilter<$PrismaModel> | $Enums.UserRole
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[]
@@ -33180,6 +33379,7 @@ export namespace Prisma {
     kraPin?: SortOrder
     ecitizenId?: SortOrder
     identifierType?: SortOrder
+    role?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -33194,6 +33394,7 @@ export namespace Prisma {
     kraPin?: SortOrder
     ecitizenId?: SortOrder
     identifierType?: SortOrder
+    role?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -33208,6 +33409,7 @@ export namespace Prisma {
     kraPin?: SortOrder
     ecitizenId?: SortOrder
     identifierType?: SortOrder
+    role?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -33256,6 +33458,16 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumIdentifierTypeFilter<$PrismaModel>
     _max?: NestedEnumIdentifierTypeFilter<$PrismaModel>
+  }
+
+  export type EnumUserRoleWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.UserRole | EnumUserRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.UserRole[]
+    notIn?: $Enums.UserRole[]
+    not?: NestedEnumUserRoleWithAggregatesFilter<$PrismaModel> | $Enums.UserRole
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumUserRoleFilter<$PrismaModel>
+    _max?: NestedEnumUserRoleFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -34554,6 +34766,12 @@ export namespace Prisma {
     migrantName?: SortOrder
     idNumber?: SortOrder
     passportNumber?: SortOrder
+    labourPsSignature?: SortOrder
+    labourPsSignedAt?: SortOrder
+    labourPsSignedBy?: SortOrder
+    msmePsSignature?: SortOrder
+    msmePsSignedAt?: SortOrder
+    msmePsSignedBy?: SortOrder
   }
 
   export type TripartiteDataMaxOrderByAggregateInput = {
@@ -34562,6 +34780,12 @@ export namespace Prisma {
     migrantName?: SortOrder
     idNumber?: SortOrder
     passportNumber?: SortOrder
+    labourPsSignature?: SortOrder
+    labourPsSignedAt?: SortOrder
+    labourPsSignedBy?: SortOrder
+    msmePsSignature?: SortOrder
+    msmePsSignedAt?: SortOrder
+    msmePsSignedBy?: SortOrder
   }
 
   export type TripartiteDataMinOrderByAggregateInput = {
@@ -34570,6 +34794,12 @@ export namespace Prisma {
     migrantName?: SortOrder
     idNumber?: SortOrder
     passportNumber?: SortOrder
+    labourPsSignature?: SortOrder
+    labourPsSignedAt?: SortOrder
+    labourPsSignedBy?: SortOrder
+    msmePsSignature?: SortOrder
+    msmePsSignedAt?: SortOrder
+    msmePsSignedBy?: SortOrder
   }
 
   export type GroupApplicationNullableScalarRelationFilter = {
@@ -34805,6 +35035,10 @@ export namespace Prisma {
 
   export type EnumIdentifierTypeFieldUpdateOperationsInput = {
     set?: $Enums.IdentifierType
+  }
+
+  export type EnumUserRoleFieldUpdateOperationsInput = {
+    set?: $Enums.UserRole
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -36048,6 +36282,13 @@ export namespace Prisma {
     not?: NestedEnumIdentifierTypeFilter<$PrismaModel> | $Enums.IdentifierType
   }
 
+  export type NestedEnumUserRoleFilter<$PrismaModel = never> = {
+    equals?: $Enums.UserRole | EnumUserRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.UserRole[]
+    notIn?: $Enums.UserRole[]
+    not?: NestedEnumUserRoleFilter<$PrismaModel> | $Enums.UserRole
+  }
+
   export type NestedDateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[]
@@ -36125,6 +36366,16 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumIdentifierTypeFilter<$PrismaModel>
     _max?: NestedEnumIdentifierTypeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumUserRoleWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.UserRole | EnumUserRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.UserRole[]
+    notIn?: $Enums.UserRole[]
+    not?: NestedEnumUserRoleWithAggregatesFilter<$PrismaModel> | $Enums.UserRole
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumUserRoleFilter<$PrismaModel>
+    _max?: NestedEnumUserRoleFilter<$PrismaModel>
   }
 
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -36554,6 +36805,7 @@ export namespace Prisma {
     kraPin?: string | null
     ecitizenId?: string | null
     identifierType?: $Enums.IdentifierType
+    role?: $Enums.UserRole
     createdAt?: Date | string
     updatedAt?: Date | string
     otpRequests?: OtpRequestCreateNestedManyWithoutUserInput
@@ -36570,6 +36822,7 @@ export namespace Prisma {
     kraPin?: string | null
     ecitizenId?: string | null
     identifierType?: $Enums.IdentifierType
+    role?: $Enums.UserRole
     createdAt?: Date | string
     updatedAt?: Date | string
     otpRequests?: OtpRequestUncheckedCreateNestedManyWithoutUserInput
@@ -36602,6 +36855,7 @@ export namespace Prisma {
     kraPin?: NullableStringFieldUpdateOperationsInput | string | null
     ecitizenId?: NullableStringFieldUpdateOperationsInput | string | null
     identifierType?: EnumIdentifierTypeFieldUpdateOperationsInput | $Enums.IdentifierType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     otpRequests?: OtpRequestUpdateManyWithoutUserNestedInput
@@ -36618,6 +36872,7 @@ export namespace Prisma {
     kraPin?: NullableStringFieldUpdateOperationsInput | string | null
     ecitizenId?: NullableStringFieldUpdateOperationsInput | string | null
     identifierType?: EnumIdentifierTypeFieldUpdateOperationsInput | $Enums.IdentifierType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     otpRequests?: OtpRequestUncheckedUpdateManyWithoutUserNestedInput
@@ -36634,6 +36889,7 @@ export namespace Prisma {
     kraPin?: string | null
     ecitizenId?: string | null
     identifierType?: $Enums.IdentifierType
+    role?: $Enums.UserRole
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
@@ -36650,6 +36906,7 @@ export namespace Prisma {
     kraPin?: string | null
     ecitizenId?: string | null
     identifierType?: $Enums.IdentifierType
+    role?: $Enums.UserRole
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
@@ -36682,6 +36939,7 @@ export namespace Prisma {
     kraPin?: NullableStringFieldUpdateOperationsInput | string | null
     ecitizenId?: NullableStringFieldUpdateOperationsInput | string | null
     identifierType?: EnumIdentifierTypeFieldUpdateOperationsInput | $Enums.IdentifierType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
@@ -36698,6 +36956,7 @@ export namespace Prisma {
     kraPin?: NullableStringFieldUpdateOperationsInput | string | null
     ecitizenId?: NullableStringFieldUpdateOperationsInput | string | null
     identifierType?: EnumIdentifierTypeFieldUpdateOperationsInput | $Enums.IdentifierType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
@@ -36714,6 +36973,7 @@ export namespace Prisma {
     kraPin?: string | null
     ecitizenId?: string | null
     identifierType?: $Enums.IdentifierType
+    role?: $Enums.UserRole
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
@@ -36730,6 +36990,7 @@ export namespace Prisma {
     kraPin?: string | null
     ecitizenId?: string | null
     identifierType?: $Enums.IdentifierType
+    role?: $Enums.UserRole
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
@@ -36982,6 +37243,7 @@ export namespace Prisma {
     kraPin?: NullableStringFieldUpdateOperationsInput | string | null
     ecitizenId?: NullableStringFieldUpdateOperationsInput | string | null
     identifierType?: EnumIdentifierTypeFieldUpdateOperationsInput | $Enums.IdentifierType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
@@ -36998,6 +37260,7 @@ export namespace Prisma {
     kraPin?: NullableStringFieldUpdateOperationsInput | string | null
     ecitizenId?: NullableStringFieldUpdateOperationsInput | string | null
     identifierType?: EnumIdentifierTypeFieldUpdateOperationsInput | $Enums.IdentifierType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
@@ -38254,6 +38517,12 @@ export namespace Prisma {
     migrantName: string
     idNumber: string
     passportNumber: string
+    labourPsSignature?: string | null
+    labourPsSignedAt?: Date | string | null
+    labourPsSignedBy?: string | null
+    msmePsSignature?: string | null
+    msmePsSignedAt?: Date | string | null
+    msmePsSignedBy?: string | null
   }
 
   export type TripartiteDataUncheckedCreateWithoutApplicationInput = {
@@ -38261,6 +38530,12 @@ export namespace Prisma {
     migrantName: string
     idNumber: string
     passportNumber: string
+    labourPsSignature?: string | null
+    labourPsSignedAt?: Date | string | null
+    labourPsSignedBy?: string | null
+    msmePsSignature?: string | null
+    msmePsSignedAt?: Date | string | null
+    msmePsSignedBy?: string | null
   }
 
   export type TripartiteDataCreateOrConnectWithoutApplicationInput = {
@@ -38628,6 +38903,12 @@ export namespace Prisma {
     migrantName?: StringFieldUpdateOperationsInput | string
     idNumber?: StringFieldUpdateOperationsInput | string
     passportNumber?: StringFieldUpdateOperationsInput | string
+    labourPsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    labourPsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    labourPsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    msmePsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TripartiteDataUncheckedUpdateWithoutApplicationInput = {
@@ -38635,6 +38916,12 @@ export namespace Prisma {
     migrantName?: StringFieldUpdateOperationsInput | string
     idNumber?: StringFieldUpdateOperationsInput | string
     passportNumber?: StringFieldUpdateOperationsInput | string
+    labourPsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    labourPsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    labourPsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignature?: NullableStringFieldUpdateOperationsInput | string | null
+    msmePsSignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    msmePsSignedBy?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ApplicationDocumentUpsertWithWhereUniqueWithoutIndividualApplicationInput = {
