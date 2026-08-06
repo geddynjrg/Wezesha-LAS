@@ -1,5 +1,8 @@
+import { MAJUU_NOINDEX_METADATA } from '@/lib/seo/site';
 import { cn } from '@workspace/ui/lib/utils';
 import type { ReactNode } from 'react';
+
+export const metadata = MAJUU_NOINDEX_METADATA;
 
 export interface ApplyLayoutProps {
   children: ReactNode;

@@ -2,6 +2,8 @@ import { LazyAppSidebar } from '@/components/lazy-app-sidebar';
 import { LazyMajuuHeader } from '@/components/lazy-majuu-header';
 import { MajuuFooter } from '@/components/majuu-footer';
 import { Providers } from '@/components/providers';
+import { MajuuJsonLd } from '@/components/seo/json-ld';
+import { createMajuuMetadata } from '@/lib/seo/site';
 import type { Locale } from '@/i18n/config';
 import { SidebarInset } from '@workspace/ui/components/sidebar';
 import '@workspace/ui/globals.css';
@@ -22,6 +24,8 @@ const dmSans = localFont({
   variable: '--font-sans',
   display: 'swap',
 });
+
+export const metadata = createMajuuMetadata();
 
 export interface RootLayoutProps {
   children: ReactNode;
@@ -55,6 +59,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         fetchPriority="high"
       />
       <body className="min-h-svh antialiased bg-site-background [--header-height:4.5rem]">
+        <MajuuJsonLd />
         <NextIntlClientProvider messages={messages}>
           <Providers>
             {!isPsRoute ? <LazyMajuuHeader /> : null}

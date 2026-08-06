@@ -1,3 +1,4 @@
+import { createMajuuMetadata } from '@/lib/seo/site';
 import { StaticApplyButton } from '@/components/static-apply-button';
 import { Container } from '@workspace/ui/components/container';
 import { HeroSection } from '@workspace/ui/components/uwezo/hero-section';
@@ -5,6 +6,13 @@ import { Card } from '@workspace/ui/components/uwezo/card';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { Button } from '@workspace/ui/components/button';
+
+export const metadata = createMajuuMetadata({
+  title: 'Home',
+  description:
+    'Wezesha Majuu — Kenya\'s Labour Mobility Loan Programme by Uwezo Fund. Apply for financing to support migrant workers and groups seeking overseas employment opportunities.',
+  path: '/',
+});
 
 export const revalidate = 3600;
 

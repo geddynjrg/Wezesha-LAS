@@ -7,6 +7,7 @@ import {
 import { PhoneLoginForm } from '@/app/login/phone-login-form';
 import { getSessionUserId } from '@/lib/auth/session';
 import { resolveLoginSuccessPath } from '@/lib/auth/return-path';
+import { MAJUU_NOINDEX_METADATA } from '@/lib/seo/site';
 import { Container } from '@workspace/ui/components/container';
 import { Divider } from '@workspace/ui/components/divider';
 import { Underline } from '@workspace/ui/components/underline';
@@ -15,6 +16,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+
+export const metadata = MAJUU_NOINDEX_METADATA;
 
 export default async function LoginPage({
   searchParams,

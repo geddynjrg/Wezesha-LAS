@@ -1,3 +1,4 @@
+import { createMajuuMetadata } from '@/lib/seo/site';
 import { StatusSearchForm } from './status-search-form';
 import { getGroupApplicationByAck, getIndividualApplication } from '@/lib/data/applications';
 import { formatAmountDisplay } from '@/lib/loan/award-amount';
@@ -5,6 +6,13 @@ import { prisma } from '@/lib/prisma';
 import { Button } from '@workspace/ui/components/button';
 import { Card } from '@workspace/ui/components/uwezo/card';
 import Link from 'next/link';
+
+export const metadata = createMajuuMetadata({
+  title: 'Track Application Status',
+  description:
+    'Track your Wezesha Majuu loan application status using your acknowledgment number or national ID on the Uwezo Fund migrant labour portal.',
+  path: '/status',
+});
 
 export default async function StatusPage({
   searchParams,
