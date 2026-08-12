@@ -1,5 +1,6 @@
 'use server';
 
+import { assertIndividualEditable } from '@/lib/individual-application-access';
 import {
   extractGuarantorInput,
   guarantorFieldsSchema,
@@ -65,6 +66,8 @@ export async function sendGuarantorOtpAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertIndividualEditable(memberId);
+
   const raw = parseGuarantorFormData(formData);
   const parsed = guarantorFieldsSchema.safeParse(extractGuarantorInput(raw, guarantorNumber));
 
@@ -143,6 +146,8 @@ export async function verifyGuarantorOtpAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertIndividualEditable(memberId);
+
   const raw = parseGuarantorFormData(formData);
   const otpInput = raw[`guarantor${guarantorNumber}_otp`]?.trim();
 
@@ -218,6 +223,8 @@ export async function saveGuarantorsAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertIndividualEditable(memberId);
+
   const raw = parseGuarantorFormData(formData);
   const parsed = guarantorFormSchema.safeParse({
     guarantor1: extractGuarantorInput(raw, 1),

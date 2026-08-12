@@ -1,5 +1,6 @@
 'use server';
 
+import { assertIndividualEditable } from '@/lib/individual-application-access';
 import {
   individualInformationSchema,
   resolveEducationLevelForSave,
@@ -12,6 +13,8 @@ export async function saveIndividualInformationAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertIndividualEditable(memberId);
+
   const formValues = Object.fromEntries(formData.entries());
   const parsed = individualInformationSchema.safeParse(formValues);
 

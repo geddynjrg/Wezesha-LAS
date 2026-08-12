@@ -1,5 +1,6 @@
 'use server';
 
+import { assertIndividualEditable } from '@/lib/individual-application-access';
 import {
   creditHistoryFormSchema,
   parseLoanDetailsJson,
@@ -13,6 +14,8 @@ export async function saveCreditHistoryAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertIndividualEditable(memberId);
+
   const raw = Object.fromEntries(formData.entries());
   const parsed = creditHistoryFormSchema.safeParse(raw);
 

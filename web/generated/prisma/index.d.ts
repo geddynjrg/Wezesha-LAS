@@ -168,6 +168,7 @@ export const MemberLoanStatus: {
   PENDING: 'PENDING',
   INDIVIDUAL_DRAFT: 'INDIVIDUAL_DRAFT',
   INDIVIDUAL_SUBMITTED: 'INDIVIDUAL_SUBMITTED',
+  AMOUNT_APPROVED: 'AMOUNT_APPROVED',
   DISBURSED: 'DISBURSED'
 };
 
@@ -14510,6 +14511,10 @@ export namespace Prisma {
     status: $Enums.ApplicationStatus | null
     progress: number | null
     awardAmount: Decimal | null
+    loanAmountApproved: boolean | null
+    loanAmountApprovedAt: Date | null
+    predisbursementAccepted: boolean | null
+    predisbursementAcceptedAt: Date | null
     submittedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -14523,6 +14528,10 @@ export namespace Prisma {
     status: $Enums.ApplicationStatus | null
     progress: number | null
     awardAmount: Decimal | null
+    loanAmountApproved: boolean | null
+    loanAmountApprovedAt: Date | null
+    predisbursementAccepted: boolean | null
+    predisbursementAcceptedAt: Date | null
     submittedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -14536,6 +14545,10 @@ export namespace Prisma {
     status: number
     progress: number
     awardAmount: number
+    loanAmountApproved: number
+    loanAmountApprovedAt: number
+    predisbursementAccepted: number
+    predisbursementAcceptedAt: number
     submittedAt: number
     createdAt: number
     updatedAt: number
@@ -14561,6 +14574,10 @@ export namespace Prisma {
     status?: true
     progress?: true
     awardAmount?: true
+    loanAmountApproved?: true
+    loanAmountApprovedAt?: true
+    predisbursementAccepted?: true
+    predisbursementAcceptedAt?: true
     submittedAt?: true
     createdAt?: true
     updatedAt?: true
@@ -14574,6 +14591,10 @@ export namespace Prisma {
     status?: true
     progress?: true
     awardAmount?: true
+    loanAmountApproved?: true
+    loanAmountApprovedAt?: true
+    predisbursementAccepted?: true
+    predisbursementAcceptedAt?: true
     submittedAt?: true
     createdAt?: true
     updatedAt?: true
@@ -14587,6 +14608,10 @@ export namespace Prisma {
     status?: true
     progress?: true
     awardAmount?: true
+    loanAmountApproved?: true
+    loanAmountApprovedAt?: true
+    predisbursementAccepted?: true
+    predisbursementAcceptedAt?: true
     submittedAt?: true
     createdAt?: true
     updatedAt?: true
@@ -14687,6 +14712,10 @@ export namespace Prisma {
     status: $Enums.ApplicationStatus
     progress: number
     awardAmount: Decimal | null
+    loanAmountApproved: boolean
+    loanAmountApprovedAt: Date | null
+    predisbursementAccepted: boolean
+    predisbursementAcceptedAt: Date | null
     submittedAt: Date | null
     createdAt: Date
     updatedAt: Date
@@ -14719,6 +14748,10 @@ export namespace Prisma {
     status?: boolean
     progress?: boolean
     awardAmount?: boolean
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: boolean
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: boolean
     submittedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -14746,13 +14779,17 @@ export namespace Prisma {
     status?: boolean
     progress?: boolean
     awardAmount?: boolean
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: boolean
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: boolean
     submittedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tripartiteAccepted?: boolean
   }
 
-  export type IndividualApplicationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "memberId" | "acknowledgmentNumber" | "status" | "progress" | "awardAmount" | "submittedAt" | "createdAt" | "updatedAt" | "tripartiteAccepted", ExtArgs["result"]["individualApplication"]>
+  export type IndividualApplicationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "memberId" | "acknowledgmentNumber" | "status" | "progress" | "awardAmount" | "loanAmountApproved" | "loanAmountApprovedAt" | "predisbursementAccepted" | "predisbursementAcceptedAt" | "submittedAt" | "createdAt" | "updatedAt" | "tripartiteAccepted", ExtArgs["result"]["individualApplication"]>
   export type IndividualApplicationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     member?: boolean | GroupMemberDefaultArgs<ExtArgs>
     location?: boolean | IndividualApplication$locationArgs<ExtArgs>
@@ -14790,6 +14827,10 @@ export namespace Prisma {
       status: $Enums.ApplicationStatus
       progress: number
       awardAmount: Prisma.Decimal | null
+      loanAmountApproved: boolean
+      loanAmountApprovedAt: Date | null
+      predisbursementAccepted: boolean
+      predisbursementAcceptedAt: Date | null
       submittedAt: Date | null
       createdAt: Date
       updatedAt: Date
@@ -15180,6 +15221,10 @@ export namespace Prisma {
     readonly status: FieldRef<"IndividualApplication", 'ApplicationStatus'>
     readonly progress: FieldRef<"IndividualApplication", 'Int'>
     readonly awardAmount: FieldRef<"IndividualApplication", 'Decimal'>
+    readonly loanAmountApproved: FieldRef<"IndividualApplication", 'Boolean'>
+    readonly loanAmountApprovedAt: FieldRef<"IndividualApplication", 'DateTime'>
+    readonly predisbursementAccepted: FieldRef<"IndividualApplication", 'Boolean'>
+    readonly predisbursementAcceptedAt: FieldRef<"IndividualApplication", 'DateTime'>
     readonly submittedAt: FieldRef<"IndividualApplication", 'DateTime'>
     readonly createdAt: FieldRef<"IndividualApplication", 'DateTime'>
     readonly updatedAt: FieldRef<"IndividualApplication", 'DateTime'>
@@ -28674,6 +28719,10 @@ export namespace Prisma {
     status: 'status',
     progress: 'progress',
     awardAmount: 'awardAmount',
+    loanAmountApproved: 'loanAmountApproved',
+    loanAmountApprovedAt: 'loanAmountApprovedAt',
+    predisbursementAccepted: 'predisbursementAccepted',
+    predisbursementAcceptedAt: 'predisbursementAcceptedAt',
     submittedAt: 'submittedAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
@@ -30206,6 +30255,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFilter<"IndividualApplication"> | $Enums.ApplicationStatus
     progress?: IntFilter<"IndividualApplication"> | number
     awardAmount?: DecimalNullableFilter<"IndividualApplication"> | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFilter<"IndividualApplication"> | boolean
+    loanAmountApprovedAt?: DateTimeNullableFilter<"IndividualApplication"> | Date | string | null
+    predisbursementAccepted?: BoolFilter<"IndividualApplication"> | boolean
+    predisbursementAcceptedAt?: DateTimeNullableFilter<"IndividualApplication"> | Date | string | null
     submittedAt?: DateTimeNullableFilter<"IndividualApplication"> | Date | string | null
     createdAt?: DateTimeFilter<"IndividualApplication"> | Date | string
     updatedAt?: DateTimeFilter<"IndividualApplication"> | Date | string
@@ -30230,6 +30283,10 @@ export namespace Prisma {
     status?: SortOrder
     progress?: SortOrder
     awardAmount?: SortOrderInput | SortOrder
+    loanAmountApproved?: SortOrder
+    loanAmountApprovedAt?: SortOrderInput | SortOrder
+    predisbursementAccepted?: SortOrder
+    predisbursementAcceptedAt?: SortOrderInput | SortOrder
     submittedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -30258,6 +30315,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFilter<"IndividualApplication"> | $Enums.ApplicationStatus
     progress?: IntFilter<"IndividualApplication"> | number
     awardAmount?: DecimalNullableFilter<"IndividualApplication"> | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFilter<"IndividualApplication"> | boolean
+    loanAmountApprovedAt?: DateTimeNullableFilter<"IndividualApplication"> | Date | string | null
+    predisbursementAccepted?: BoolFilter<"IndividualApplication"> | boolean
+    predisbursementAcceptedAt?: DateTimeNullableFilter<"IndividualApplication"> | Date | string | null
     submittedAt?: DateTimeNullableFilter<"IndividualApplication"> | Date | string | null
     createdAt?: DateTimeFilter<"IndividualApplication"> | Date | string
     updatedAt?: DateTimeFilter<"IndividualApplication"> | Date | string
@@ -30282,6 +30343,10 @@ export namespace Prisma {
     status?: SortOrder
     progress?: SortOrder
     awardAmount?: SortOrderInput | SortOrder
+    loanAmountApproved?: SortOrder
+    loanAmountApprovedAt?: SortOrderInput | SortOrder
+    predisbursementAccepted?: SortOrder
+    predisbursementAcceptedAt?: SortOrderInput | SortOrder
     submittedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -30303,6 +30368,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusWithAggregatesFilter<"IndividualApplication"> | $Enums.ApplicationStatus
     progress?: IntWithAggregatesFilter<"IndividualApplication"> | number
     awardAmount?: DecimalNullableWithAggregatesFilter<"IndividualApplication"> | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolWithAggregatesFilter<"IndividualApplication"> | boolean
+    loanAmountApprovedAt?: DateTimeNullableWithAggregatesFilter<"IndividualApplication"> | Date | string | null
+    predisbursementAccepted?: BoolWithAggregatesFilter<"IndividualApplication"> | boolean
+    predisbursementAcceptedAt?: DateTimeNullableWithAggregatesFilter<"IndividualApplication"> | Date | string | null
     submittedAt?: DateTimeNullableWithAggregatesFilter<"IndividualApplication"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"IndividualApplication"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"IndividualApplication"> | Date | string
@@ -32253,6 +32322,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -32277,6 +32350,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -32299,6 +32376,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32323,6 +32404,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32346,6 +32431,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -32358,6 +32447,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32371,6 +32464,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -34325,6 +34422,10 @@ export namespace Prisma {
     status?: SortOrder
     progress?: SortOrder
     awardAmount?: SortOrder
+    loanAmountApproved?: SortOrder
+    loanAmountApprovedAt?: SortOrder
+    predisbursementAccepted?: SortOrder
+    predisbursementAcceptedAt?: SortOrder
     submittedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -34343,6 +34444,10 @@ export namespace Prisma {
     status?: SortOrder
     progress?: SortOrder
     awardAmount?: SortOrder
+    loanAmountApproved?: SortOrder
+    loanAmountApprovedAt?: SortOrder
+    predisbursementAccepted?: SortOrder
+    predisbursementAcceptedAt?: SortOrder
     submittedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -34356,6 +34461,10 @@ export namespace Prisma {
     status?: SortOrder
     progress?: SortOrder
     awardAmount?: SortOrder
+    loanAmountApproved?: SortOrder
+    loanAmountApprovedAt?: SortOrder
+    predisbursementAccepted?: SortOrder
+    predisbursementAcceptedAt?: SortOrder
     submittedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -37797,6 +37906,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -37819,6 +37932,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -37926,6 +38043,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -37948,6 +38069,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38946,6 +39071,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -38969,6 +39098,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39006,6 +39139,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39029,6 +39166,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39050,6 +39191,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39073,6 +39218,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39110,6 +39259,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39133,6 +39286,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39154,6 +39311,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39177,6 +39338,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39214,6 +39379,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39237,6 +39406,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39258,6 +39431,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39281,6 +39458,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39318,6 +39499,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39341,6 +39526,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39362,6 +39551,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39385,6 +39578,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39422,6 +39619,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39445,6 +39646,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39466,6 +39671,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39489,6 +39698,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39526,6 +39739,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39549,6 +39766,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39570,6 +39791,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39593,6 +39818,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39630,6 +39859,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39653,6 +39886,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39674,6 +39911,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39697,6 +39938,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39734,6 +39979,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39757,6 +40006,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39778,6 +40031,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39801,6 +40058,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39838,6 +40099,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39861,6 +40126,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39923,6 +40192,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39946,6 +40219,10 @@ export namespace Prisma {
     status?: $Enums.ApplicationStatus
     progress?: number
     awardAmount?: Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: boolean
+    loanAmountApprovedAt?: Date | string | null
+    predisbursementAccepted?: boolean
+    predisbursementAcceptedAt?: Date | string | null
     submittedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -40030,6 +40307,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40053,6 +40334,10 @@ export namespace Prisma {
     status?: EnumApplicationStatusFieldUpdateOperationsInput | $Enums.ApplicationStatus
     progress?: IntFieldUpdateOperationsInput | number
     awardAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loanAmountApproved?: BoolFieldUpdateOperationsInput | boolean
+    loanAmountApprovedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    predisbursementAccepted?: BoolFieldUpdateOperationsInput | boolean
+    predisbursementAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     submittedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

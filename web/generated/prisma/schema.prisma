@@ -27,6 +27,7 @@ enum MemberLoanStatus {
   PENDING
   INDIVIDUAL_DRAFT
   INDIVIDUAL_SUBMITTED
+  AMOUNT_APPROVED
   DISBURSED
 }
 
@@ -251,15 +252,19 @@ model GroupBankAccount {
 }
 
 model IndividualApplication {
-  id                   String            @id @default(cuid())
-  memberId             String            @unique
-  acknowledgmentNumber String            @unique
-  status               ApplicationStatus @default(DRAFT)
-  progress             Int               @default(1)
-  awardAmount          Decimal?          @db.Decimal(12, 2)
-  submittedAt          DateTime?
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+  id                        String            @id @default(cuid())
+  memberId                  String            @unique
+  acknowledgmentNumber      String            @unique
+  status                    ApplicationStatus @default(DRAFT)
+  progress                  Int               @default(1)
+  awardAmount               Decimal?          @db.Decimal(12, 2)
+  loanAmountApproved        Boolean           @default(false)
+  loanAmountApprovedAt      DateTime?
+  predisbursementAccepted   Boolean           @default(false)
+  predisbursementAcceptedAt DateTime?
+  submittedAt               DateTime?
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
 
   member             GroupMember            @relation(fields: [memberId], references: [id], onDelete: Cascade)
   location           LocationData?

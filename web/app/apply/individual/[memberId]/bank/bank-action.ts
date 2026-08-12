@@ -1,5 +1,6 @@
 'use server';
 
+import { assertIndividualEditable } from '@/lib/individual-application-access';
 import { bankSchema } from './bank-schema';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
@@ -9,6 +10,8 @@ export async function saveBankAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertIndividualEditable(memberId);
+
   const raw = Object.fromEntries(formData.entries());
   const parsed = bankSchema.safeParse(raw);
 

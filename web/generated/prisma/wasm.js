@@ -273,6 +273,10 @@ exports.Prisma.IndividualApplicationScalarFieldEnum = {
   status: 'status',
   progress: 'progress',
   awardAmount: 'awardAmount',
+  loanAmountApproved: 'loanAmountApproved',
+  loanAmountApprovedAt: 'loanAmountApprovedAt',
+  predisbursementAccepted: 'predisbursementAccepted',
+  predisbursementAcceptedAt: 'predisbursementAcceptedAt',
   submittedAt: 'submittedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
@@ -668,6 +672,7 @@ exports.MemberLoanStatus = exports.$Enums.MemberLoanStatus = {
   PENDING: 'PENDING',
   INDIVIDUAL_DRAFT: 'INDIVIDUAL_DRAFT',
   INDIVIDUAL_SUBMITTED: 'INDIVIDUAL_SUBMITTED',
+  AMOUNT_APPROVED: 'AMOUNT_APPROVED',
   DISBURSED: 'DISBURSED'
 };
 

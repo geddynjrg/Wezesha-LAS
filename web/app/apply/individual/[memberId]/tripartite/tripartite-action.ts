@@ -19,6 +19,10 @@ export async function submitTripartiteAction(memberId: string, _prev: unknown, f
 
   const app = await prisma.individualApplication.findUniqueOrThrow({ where: { memberId } });
 
+  if (app.submittedAt || app.status !== 'DRAFT') {
+    redirect(`/apply/individual/${memberId}/dashboard`);
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.tripartiteData.upsert({
       where: { applicationId: app.id },
@@ -42,7 +46,7 @@ export async function submitTripartiteAction(memberId: string, _prev: unknown, f
   });
 
   await submitIndividualApplication(app.id);
-  redirect(`/apply/individual/${memberId}/complete`);
+  redirect(`/apply/individual/${memberId}/dashboard`);
 }
 
 export async function getTripartiteDefaults(memberId: string) {

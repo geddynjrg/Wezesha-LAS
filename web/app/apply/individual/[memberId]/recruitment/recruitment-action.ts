@@ -1,5 +1,6 @@
 'use server';
 
+import { assertIndividualEditable } from '@/lib/individual-application-access';
 import { recruitmentSchema } from './recruitment-schema';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma';
@@ -17,6 +18,8 @@ export async function saveRecruitmentAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertIndividualEditable(memberId);
+
   const raw = Object.fromEntries(formData.entries());
   const parsed = recruitmentSchema.safeParse(raw);
 

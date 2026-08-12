@@ -1,5 +1,6 @@
 'use server';
 
+import { assertIndividualEditable } from '@/lib/individual-application-access';
 import {
   budgetFormSchema,
   parseBudgetItemsJson,
@@ -21,6 +22,8 @@ export async function saveBudgetAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertIndividualEditable(memberId);
+
   const raw = Object.fromEntries(formData.entries());
   const parsed = budgetFormSchema.safeParse(raw);
 
