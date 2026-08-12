@@ -1,6 +1,10 @@
 import { ApplicationProgressCard } from '@/components/application-progress-card';
 import { IndividualApplicationCard } from '@/components/individual-application-card';
 import { getUserGroupApplications, getUserIndividualMemberships } from '@/lib/data/applications';
+import {
+  getIndividualApplicationUrl,
+  isIndividualApplicationSubmitted,
+} from '@/lib/individual-application-url';
 import { getSessionUserId } from '@/lib/auth/session';
 import { isValidReturnPath } from '@/lib/auth/return-path';
 import { IconFileText, IconPlus } from '@tabler/icons-react';
@@ -36,6 +40,20 @@ export default async function DashboardPage({
   const individualMemberships = memberships.filter(
     (member) => !ownedGroupIds.has(member.applicationId) || member.individualApplication,
   );
+
+  // Members with only one individual application skip the group dashboard.
+  if (applications.length === 0 && individualMemberships.length === 1) {
+    const member = individualMemberships[0]!;
+    const individual = member.individualApplication;
+    redirect(
+      getIndividualApplicationUrl(
+        member.id,
+        individual?.progress ?? 1,
+        isIndividualApplicationSubmitted(individual?.submittedAt, individual?.status),
+      ),
+    );
+  }
+
   const totalCount = applications.length + individualMemberships.length;
 
   return (
@@ -119,8 +137,10 @@ export default async function DashboardPage({
               <div className="grid justify-center gap-8 md:grid-cols-2 md:justify-normal">
                 {individualMemberships.map((member) => {
                   const individual = member.individualApplication;
-                  const submitted = Boolean(individual?.submittedAt) ||
-                    (individual?.status != null && individual.status !== 'DRAFT');
+                  const submitted = isIndividualApplicationSubmitted(
+                    individual?.submittedAt,
+                    individual?.status,
+                  );
 
                   return (
                     <IndividualApplicationCard

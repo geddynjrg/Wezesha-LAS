@@ -1,6 +1,8 @@
 import { MajuuApplicationStatus } from '@/components/majuu-application-status';
 import type { ApplicationStatus } from '@/generated/prisma';
-import { INDIVIDUAL_STEPS } from '@/lib/constants/majuu-steps';
+import {
+  getIndividualApplicationUrl,
+} from '@/lib/individual-application-url';
 import { Button } from '@workspace/ui/components/button';
 import { Card } from '@workspace/ui/components/card';
 import { getTranslations } from 'next-intl/server';
@@ -17,15 +19,6 @@ export interface IndividualApplicationCardProps {
   submitted: boolean;
 }
 
-function individualContinueUrl(memberId: string, progress: number, submitted: boolean) {
-  if (submitted) {
-    return `/apply/individual/${memberId}/dashboard`;
-  }
-  const stepIndex = Math.max(0, Math.min((progress || 1) - 1, INDIVIDUAL_STEPS.length - 1));
-  const path = INDIVIDUAL_STEPS[stepIndex]?.path ?? '/individual-information';
-  return `/apply/individual/${memberId}${path}`;
-}
-
 export const IndividualApplicationCard: FC<IndividualApplicationCardProps> = async ({
   memberId,
   memberName,
@@ -36,7 +29,7 @@ export const IndividualApplicationCard: FC<IndividualApplicationCardProps> = asy
   submitted,
 }) => {
   const t = await getTranslations('DashboardPage');
-  const href = individualContinueUrl(memberId, progress ?? 1, submitted);
+  const href = getIndividualApplicationUrl(memberId, progress ?? 1, submitted);
 
   return (
     <Card
