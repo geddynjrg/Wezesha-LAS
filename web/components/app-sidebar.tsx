@@ -28,6 +28,9 @@ export const AppSidebar: FC<AppSidebarProps> = () => {
             <NavLink href="/">{t('home')}</NavLink>
           </SidebarMenuItem>
           <SidebarMenuItem asChild>
+            <NavLink href="/my-application">{t('myIndividualApplication')}</NavLink>
+          </SidebarMenuItem>
+          <SidebarMenuItem asChild>
             <NavLink href="/dashboard">{t('dashboard')}</NavLink>
           </SidebarMenuItem>
           <SidebarMenuItem asChild>
@@ -37,7 +40,7 @@ export const AppSidebar: FC<AppSidebarProps> = () => {
             <NavLink href="/apply/create">{t('startApplication')}</NavLink>
           </SidebarMenuItem>
           <SidebarMenuItem asChild>
-            <NavLink href="/apply/individual">{t('individualApplication')}</NavLink>
+            <NavLink href="/apply/individual">{t('findByNationalId')}</NavLink>
           </SidebarMenuItem>
           <SidebarMenuItem asChild>
             <NavLink href="/status">{t('trackStatus')}</NavLink>

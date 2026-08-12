@@ -11,6 +11,8 @@ import { MAJUU_NOINDEX_METADATA } from '@/lib/seo/site';
 import { Container } from '@workspace/ui/components/container';
 import { Divider } from '@workspace/ui/components/divider';
 import { Underline } from '@workspace/ui/components/underline';
+import { Button } from '@workspace/ui/components/button';
+import { Card } from '@workspace/ui/components/card';
 import { getTranslations } from 'next-intl/server';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -70,6 +72,14 @@ export default async function LoginPage({
             })}
           </p>
         </header>
+
+        <Card variant="primary" className="mb-6 space-y-3 p-4">
+          <h2 className="typo-h6 font-semibold">{t('memberCtaTitle')}</h2>
+          <p className="text-sm text-neutral-600">{t('memberCtaDescription')}</p>
+          <Button asChild className="w-full">
+            <Link href="/my-application">{t('memberCtaButton')}</Link>
+          </Button>
+        </Card>
 
         <section aria-labelledby="login-form-heading">
           <h2 id="login-form-heading" className="sr-only">

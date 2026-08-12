@@ -27,6 +27,8 @@
     "closeMenu": "Close menu",
     "home": "Home",
     "dashboard": "My applications",
+    "myIndividualApplication": "My individual application",
+    "findByNationalId": "Find application by ID",
     "apply": "Apply",
     "startApplication": "Start application",
     "individualApplication": "Individual application",
@@ -62,7 +64,18 @@
     "changePhoneNumber": "Change phone number",
     "otpCode": "Login code",
     "enterOtpSentTo": "Enter the 6-digit code sent to {phoneNumber}",
-    "invalidOtpFormat": "Invalid OTP code format"
+    "invalidOtpFormat": "Invalid OTP code format",
+    "memberCtaTitle": "Group member?",
+    "memberCtaDescription": "After login you go straight to your individual application. Use the same phone number or national ID as on your member record.",
+    "memberCtaButton": "Continue my individual application"
+  },
+  "MyApplicationPage": {
+    "title": "My individual application",
+    "notFoundDescription": "We could not match your account to a member record yet. Enter your national ID to find your application, or start a new group application.",
+    "lookupById": "Enter my national ID",
+    "viewAllApplications": "View all applications",
+    "chooseTitle": "Choose your individual application",
+    "chooseDescription": "Your account is linked to more than one individual application. Open the one you want to continue."
   },
   "SignUpPage": {
     "title": "Create an Account",
@@ -107,6 +120,9 @@
     "groupApplications": "Group applications",
     "individualApplications": "My individual application",
     "individualApplicationsHint": "Open your personal Wezesha Majuu application, including signed documents.",
+    "individualQuickAccessTitle": "Your individual application",
+    "individualQuickAccessDescription": "View documents, download your tripartite agreement, and complete pre-disbursement consent.",
+    "openIndividualApplication": "Open my application",
     "viewIndividualApplication": "View my application",
     "continueIndividualApplication": "Continue individual application",
     "individualPendingAck": "Individual application",
@@ -118,7 +134,8 @@
     "emptyState": {
       "title": "No applications yet",
       "description": "Start a group application, or log in with the phone or national ID used on your member record to open your individual application.",
-      "applyButton": "Start application"
+      "applyButton": "Start group application",
+      "memberButton": "I am a group member"
     },
     "status": {
       "title": "Status",

@@ -8,7 +8,7 @@ import {
 } from '@/lib/auth/middleware-session';
 import { type NextRequest, NextResponse, userAgent } from 'next/server';
 
-const applicantProtectedRoutes = ['/apply', '/dashboard'];
+const applicantProtectedRoutes = ['/apply', '/dashboard', '/my-application'];
 const applicantPublicRoutes = ['/login', '/signup', '/ecitizen'];
 const psProtectedRoutes = ['/ps/dashboard', '/ps/signing', '/ps/applications', '/ps/profile', '/ps/help'];
 const psPublicRoutes = ['/ps/sign-in'];

@@ -144,6 +144,10 @@ export async function getUserIndividualMemberships(userId: string) {
   });
 }
 
+export type UserIndividualMembership = Awaited<
+  ReturnType<typeof getUserIndividualMemberships>
+>[number];
+
 export async function getGroupApplication(id: string) {
   return prisma.groupApplication.findUnique({
     where: { id },

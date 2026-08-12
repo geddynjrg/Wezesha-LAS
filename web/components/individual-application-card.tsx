@@ -17,6 +17,7 @@ export interface IndividualApplicationCardProps {
   progress?: number | null;
   groupName?: string | null;
   submitted: boolean;
+  href?: string;
 }
 
 export const IndividualApplicationCard: FC<IndividualApplicationCardProps> = async ({
@@ -27,9 +28,11 @@ export const IndividualApplicationCard: FC<IndividualApplicationCardProps> = asy
   progress = 1,
   groupName,
   submitted,
+  href: hrefOverride,
 }) => {
   const t = await getTranslations('DashboardPage');
-  const href = getIndividualApplicationUrl(memberId, progress ?? 1, submitted);
+  const href =
+    hrefOverride ?? getIndividualApplicationUrl(memberId, progress ?? 1, submitted);
 
   return (
     <Card

@@ -17,7 +17,7 @@ const EXCLUDED_PREFIXES = [
   '/ecitizen/',
 ];
 
-const ALLOWED_PREFIXES = ['/apply', '/status', '/dashboard'];
+const ALLOWED_PREFIXES = ['/apply', '/status', '/dashboard', '/my-application'];
 
 export function isValidReturnPath(
   path: string | null | undefined,
@@ -43,7 +43,7 @@ export function isValidReturnPath(
 
 /**
  * Where to send the user immediately after a successful login.
- * Always lands on /dashboard first; pending destinations use ?redirect=.
+ * `/my-application` resolves to the individual dashboard when possible.
  */
 export function resolveLoginSuccessPath(
   callbackUrl?: string | null,
@@ -52,11 +52,11 @@ export function resolveLoginSuccessPath(
     callbackUrl && isValidReturnPath(callbackUrl) ? callbackUrl : null;
 
   if (!pending) {
-    return '/dashboard';
+    return '/my-application';
   }
 
   const pathname = pending.split('?')[0] ?? pending;
-  if (pathname === '/dashboard') {
+  if (pathname === '/dashboard' || pathname === '/my-application') {
     return pending;
   }
 
@@ -69,7 +69,7 @@ export function resolveReturnPath(explicit?: string | null): string {
   }
 
   if (typeof window === 'undefined') {
-    return '/dashboard';
+    return '/my-application';
   }
 
   const fromStorage = localStorage.getItem(RETURN_PATH_COOKIE);
@@ -82,7 +82,7 @@ export function resolveReturnPath(explicit?: string | null): string {
     return fromCookie;
   }
 
-  return '/dashboard';
+  return '/my-application';
 }
 
 export function persistReturnPath(path: string): void {

@@ -91,6 +91,11 @@ export const ProfileMenu: FC = () => {
         )}
 
         <DropdownMenuItem asChild>
+          <Link href="/my-application" className="text-foreground cursor-pointer">
+            {t('myIndividualApplication')}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link href="/dashboard" className="text-foreground cursor-pointer">
             {t('myApplications')}
           </Link>
