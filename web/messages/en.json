@@ -104,6 +104,12 @@
   "DashboardPage": {
     "myApplications": "My Applications",
     "newApplication": "New application",
+    "groupApplications": "Group applications",
+    "individualApplications": "My individual application",
+    "individualApplicationsHint": "Open your personal Wezesha Majuu application, including signed documents.",
+    "viewIndividualApplication": "View my application",
+    "continueIndividualApplication": "Continue individual application",
+    "individualPendingAck": "Individual application",
     "group": "Group",
     "groupNamePending": "Group name not yet provided",
     "continueFillingApplication": "Continue filling application",
@@ -111,7 +117,7 @@
     "memberProgress": "{submitted} of {total} members submitted individual applications",
     "emptyState": {
       "title": "No applications yet",
-      "description": "Start a group application to receive your UWZ acknowledgment number and begin the Wezesha Majuu loan process.",
+      "description": "Start a group application, or log in with the phone or national ID used on your member record to open your individual application.",
       "applyButton": "Start application"
     },
     "status": {

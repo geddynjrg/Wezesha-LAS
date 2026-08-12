@@ -168,7 +168,7 @@ export default async function IndividualDashboardPage({
                 The tripartite agreement is fully signed and available to download.
               </p>
               <Button asChild>
-                <Link href={`${base}/tripartite/download`}>Download tripartite agreement</Link>
+                <a href={`${base}/tripartite/download`}>Download tripartite agreement (PDF)</a>
               </Button>
             </>
           )}

@@ -5,6 +5,10 @@ import { generateAcknowledgmentNumber } from '@/lib/constants/majuu-steps';
 import { getIndividualAwardAmount } from '@/lib/loan/award-amount';
 import { getSessionUserId } from '@/lib/auth/session';
 import {
+  normalizeKenyanPhoneForApi,
+  normalizeKenyanPhoneLocal,
+} from '@/lib/phone/kenyan-phone';
+import {
   buildGroupSubmissionConfirmationMessage,
   sendSms,
 } from '@/lib/sms/sms.service';
@@ -74,6 +78,69 @@ export async function getUserGroupApplications(userId: string) {
       },
     },
     orderBy: { updatedAt: 'desc' },
+  });
+}
+
+function digitsOnly(value: string | null | undefined) {
+  return (value ?? '').replace(/\D/g, '');
+}
+
+/** Individual applications for the logged-in person (matched by ID, phone, or email). */
+export async function getUserIndividualMemberships(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, idNumber: true, phoneNumber: true, email: true },
+  });
+
+  if (!user) return [];
+
+  const or: Prisma.GroupMemberWhereInput[] = [];
+  const idDigits = digitsOnly(user.idNumber);
+  if (user.idNumber?.trim()) {
+    or.push({ idNo: user.idNumber.trim() });
+  }
+  if (idDigits) {
+    or.push({ idNo: idDigits });
+  }
+
+  const localPhone = user.phoneNumber ? normalizeKenyanPhoneLocal(user.phoneNumber) : null;
+  if (localPhone) {
+    or.push({ mobile: { contains: localPhone } });
+  }
+
+  if (user.email?.trim()) {
+    or.push({ email: user.email.trim() });
+  }
+
+  if (or.length === 0) return [];
+
+  const members = await prisma.groupMember.findMany({
+    where: { OR: or },
+    include: {
+      individualApplication: true,
+      application: { include: { groupData: true } },
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+
+  return members.filter((member) => {
+    if (idDigits && digitsOnly(member.idNo) === idDigits) return true;
+    if (localPhone && normalizeKenyanPhoneLocal(member.mobile) === localPhone) return true;
+    if (
+      user.phoneNumber &&
+      member.mobile &&
+      normalizeKenyanPhoneForApi(user.phoneNumber) === normalizeKenyanPhoneForApi(member.mobile)
+    ) {
+      return true;
+    }
+    if (
+      user.email &&
+      member.email &&
+      user.email.trim().toLowerCase() === member.email.trim().toLowerCase()
+    ) {
+      return true;
+    }
+    return false;
   });
 }
 
