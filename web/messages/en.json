@@ -66,8 +66,12 @@
     "enterOtpSentTo": "Enter the 6-digit code sent to {phoneNumber}",
     "invalidOtpFormat": "Invalid OTP code format",
     "memberCtaTitle": "Group member?",
-    "memberCtaDescription": "After login you go straight to your individual application. Use the same phone number or national ID as on your member record.",
-    "memberCtaButton": "Continue my individual application"
+    "memberCtaDescription": "Open your personal application after login. Use the same phone number or national ID as on your member record.",
+    "memberCtaButton": "Continue my individual application",
+    "groupCtaTitle": "Group chair?",
+    "groupCtaDescription": "Log in below to continue group applications started with this phone number, email, or national ID.",
+    "groupCtaContinueDescription": "Log in below to continue your group application. You can also open an individual application if you are a listed member.",
+    "groupCtaButton": "Continue group applications"
   },
   "MyApplicationPage": {
     "title": "My individual application",
@@ -118,6 +122,9 @@
     "myApplications": "My Applications",
     "newApplication": "New application",
     "groupApplications": "Group applications",
+    "groupQuickAccessTitle": "Your group applications",
+    "groupQuickAccessDescription": "Continue or view group applications linked to this phone number, email, or national ID.",
+    "openGroupApplications": "View group applications",
     "individualApplications": "My individual application",
     "individualApplicationsHint": "Open your personal Wezesha Majuu application, including signed documents.",
     "individualQuickAccessTitle": "Your individual application",

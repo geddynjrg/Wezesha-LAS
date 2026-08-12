@@ -43,7 +43,7 @@ export function isValidReturnPath(
 
 /**
  * Where to send the user immediately after a successful login.
- * `/my-application` resolves to the individual dashboard when possible.
+ * Default is the combined applications dashboard (group + individual).
  */
 export function resolveLoginSuccessPath(
   callbackUrl?: string | null,
@@ -52,15 +52,10 @@ export function resolveLoginSuccessPath(
     callbackUrl && isValidReturnPath(callbackUrl) ? callbackUrl : null;
 
   if (!pending) {
-    return '/my-application';
+    return '/dashboard';
   }
 
-  const pathname = pending.split('?')[0] ?? pending;
-  if (pathname === '/dashboard' || pathname === '/my-application') {
-    return pending;
-  }
-
-  return `/dashboard?${POST_LOGIN_REDIRECT_PARAM}=${encodeURIComponent(pending)}`;
+  return pending;
 }
 
 export function resolveReturnPath(explicit?: string | null): string {
@@ -69,7 +64,7 @@ export function resolveReturnPath(explicit?: string | null): string {
   }
 
   if (typeof window === 'undefined') {
-    return '/my-application';
+    return '/dashboard';
   }
 
   const fromStorage = localStorage.getItem(RETURN_PATH_COOKIE);
@@ -82,7 +77,34 @@ export function resolveReturnPath(explicit?: string | null): string {
     return fromCookie;
   }
 
-  return '/my-application';
+  return '/dashboard';
+}
+
+export function isGroupLoginIntent(callbackUrl?: string | null): boolean {
+  if (!callbackUrl || !isValidReturnPath(callbackUrl)) {
+    return false;
+  }
+
+  const pathname = callbackUrl.split('?')[0] ?? '';
+  return (
+    pathname === '/apply/create' ||
+    pathname === '/apply' ||
+    pathname.startsWith('/apply/group/') ||
+    pathname === '/dashboard'
+  );
+}
+
+export function isMemberLoginIntent(callbackUrl?: string | null): boolean {
+  if (!callbackUrl || !isValidReturnPath(callbackUrl)) {
+    return false;
+  }
+
+  const pathname = callbackUrl.split('?')[0] ?? '';
+  return (
+    pathname === '/my-application' ||
+    pathname === '/apply/individual' ||
+    pathname.startsWith('/apply/individual/')
+  );
 }
 
 export function persistReturnPath(path: string): void {

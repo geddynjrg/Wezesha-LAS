@@ -1,6 +1,7 @@
 import {
   getReturnPathFromCookieValue,
   isValidReturnPath,
+  resolveLoginSuccessPath,
 } from '@/lib/auth/return-path';
 import {
   getMiddlewareSession,
@@ -102,10 +103,11 @@ export async function middleware(request: NextRequest) {
     }
 
     if (await hasActiveAccessSession()) {
-      const savedPath =
-        getReturnPathFromCookieValue(
-          request.cookies.get('majuu_return_path')?.value,
-        ) ?? '/dashboard';
+      const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+      const savedPath = resolveLoginSuccessPath(
+        callbackUrl ??
+          getReturnPathFromCookieValue(request.cookies.get('majuu_return_path')?.value),
+      );
 
       return NextResponse.redirect(new URL(savedPath, request.nextUrl), {
         headers: requestHeaders,

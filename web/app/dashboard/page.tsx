@@ -9,7 +9,7 @@ import {
 import { isIndividualApplicationSubmitted } from '@/lib/individual-application-url';
 import { getSessionUserId } from '@/lib/auth/session';
 import { isValidReturnPath } from '@/lib/auth/return-path';
-import { IconFileText, IconPlus, IconUser } from '@tabler/icons-react';
+import { IconFileText, IconPlus, IconUsers, IconUser } from '@tabler/icons-react';
 import { Button } from '@workspace/ui/components/button';
 import { Card } from '@workspace/ui/components/card';
 import { Container } from '@workspace/ui/components/container';
@@ -69,6 +69,25 @@ export default async function DashboardPage({
         )}
       </div>
 
+      {applications.length > 0 ? (
+        <Card className="mb-8 border-neutral-200 bg-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-700">
+                <IconUsers className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="typo-h5">{t('groupQuickAccessTitle')}</h3>
+                <p className="text-sm text-neutral-600">{t('groupQuickAccessDescription')}</p>
+              </div>
+            </div>
+            <Button size="lg" variant="secondary" asChild>
+              <Link href="#group-applications">{t('openGroupApplications')}</Link>
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
       {primaryIndividualUrl ? (
         <Card className="mb-8 border-primary/20 bg-primary/5 p-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -121,6 +140,32 @@ export default async function DashboardPage({
         </div>
       ) : (
         <div className="space-y-10 pb-8">
+          {applications.length > 0 ? (
+            <section id="group-applications" className="space-y-4">
+              <h3 className="typo-h4">{t('groupApplications')}</h3>
+              <div className="grid justify-center gap-8 md:grid-cols-2 md:justify-normal">
+                {applications.map((application) => {
+                  const submittedMemberCount = application.members.filter(
+                    (member) => member.loanStatus === 'INDIVIDUAL_SUBMITTED',
+                  ).length;
+
+                  return (
+                    <ApplicationProgressCard
+                      key={application.id}
+                      id={application.id}
+                      acknowledgmentNumber={application.acknowledgmentNumber}
+                      status={application.status}
+                      progress={application.progress}
+                      groupName={application.groupData?.groupName}
+                      memberCount={application.members.length}
+                      submittedMemberCount={submittedMemberCount}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
           {individualMemberships.length > 0 ? (
             <section className="space-y-4">
               <h3 className="typo-h4">{t('individualApplications')}</h3>
@@ -146,32 +191,6 @@ export default async function DashboardPage({
                       groupName={member.application.groupData?.groupName}
                       submitted={submitted}
                       href={individualMembershipUrl(member)}
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          ) : null}
-
-          {applications.length > 0 ? (
-            <section className="space-y-4">
-              <h3 className="typo-h4">{t('groupApplications')}</h3>
-              <div className="grid justify-center gap-8 md:grid-cols-2 md:justify-normal">
-                {applications.map((application) => {
-                  const submittedMemberCount = application.members.filter(
-                    (member) => member.loanStatus === 'INDIVIDUAL_SUBMITTED',
-                  ).length;
-
-                  return (
-                    <ApplicationProgressCard
-                      key={application.id}
-                      id={application.id}
-                      acknowledgmentNumber={application.acknowledgmentNumber}
-                      status={application.status}
-                      progress={application.progress}
-                      groupName={application.groupData?.groupName}
-                      memberCount={application.members.length}
-                      submittedMemberCount={submittedMemberCount}
                     />
                   );
                 })}

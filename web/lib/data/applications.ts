@@ -66,52 +66,99 @@ export async function getOrCreateGroupApplication() {
   return createGroupApplication(userId);
 }
 
-export async function getUserGroupApplications(userId: string) {
-  return prisma.groupApplication.findMany({
-    where: { userId },
+const groupApplicationListInclude = {
+  groupData: true,
+  members: {
     include: {
-      groupData: true,
-      members: {
-        include: {
-          individualApplication: true,
-        },
-      },
+      individualApplication: true,
     },
-    orderBy: { updatedAt: 'desc' },
-  });
-}
+  },
+} as const;
 
 function digitsOnly(value: string | null | undefined) {
   return (value ?? '').replace(/\D/g, '');
 }
 
-/** Individual applications for the logged-in person (matched by ID, phone, or email). */
-export async function getUserIndividualMemberships(userId: string) {
-  const user = await prisma.user.findUnique({
+function phoneMatchVariants(phone: string | null | undefined): string[] {
+  const local = phone ? normalizeKenyanPhoneLocal(phone) : null;
+  if (!local) return [];
+
+  return Array.from(
+    new Set([local, `0${local}`, `254${local}`, `+254${local}`]),
+  );
+}
+
+async function loadUserIdentity(userId: string) {
+  return prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, idNumber: true, phoneNumber: true, email: true },
   });
+}
 
-  if (!user) return [];
-
-  const or: Prisma.GroupMemberWhereInput[] = [];
+function memberIdentityFiltersFromUser(user: {
+  idNumber: string | null;
+  phoneNumber: string | null;
+  email: string | null;
+}): Prisma.GroupMemberWhereInput[] {
+  const filters: Prisma.GroupMemberWhereInput[] = [];
   const idDigits = digitsOnly(user.idNumber);
   if (user.idNumber?.trim()) {
-    or.push({ idNo: user.idNumber.trim() });
+    filters.push({ idNo: user.idNumber.trim() });
   }
   if (idDigits) {
-    or.push({ idNo: idDigits });
+    filters.push({ idNo: idDigits });
   }
 
-  const localPhone = user.phoneNumber ? normalizeKenyanPhoneLocal(user.phoneNumber) : null;
-  if (localPhone) {
-    or.push({ mobile: { contains: localPhone } });
+  for (const variant of phoneMatchVariants(user.phoneNumber)) {
+    filters.push({ mobile: { contains: variant } });
   }
 
   if (user.email?.trim()) {
-    or.push({ email: user.email.trim() });
+    filters.push({ email: user.email.trim() });
   }
 
+  return filters;
+}
+
+export async function getUserGroupApplications(userId: string) {
+  const user = await loadUserIdentity(userId);
+  if (!user) return [];
+
+  const memberFilters = memberIdentityFiltersFromUser(user);
+  const relatedUserOr: Prisma.UserWhereInput[] = [{ id: userId }];
+  if (user.email) relatedUserOr.push({ email: user.email });
+  if (user.idNumber) relatedUserOr.push({ idNumber: user.idNumber });
+  if (user.phoneNumber) {
+    relatedUserOr.push({ phoneNumber: user.phoneNumber });
+    for (const variant of phoneMatchVariants(user.phoneNumber)) {
+      relatedUserOr.push({ phoneNumber: variant });
+    }
+  }
+
+  const relatedUsers = await prisma.user.findMany({
+    where: { OR: relatedUserOr },
+    select: { id: true },
+  });
+  const relatedUserIds = Array.from(new Set(relatedUsers.map((row) => row.id)));
+
+  return prisma.groupApplication.findMany({
+    where: {
+      OR: [
+        { userId: { in: relatedUserIds } },
+        ...(memberFilters.length > 0 ? [{ members: { some: { OR: memberFilters } } }] : []),
+      ],
+    },
+    include: groupApplicationListInclude,
+    orderBy: { updatedAt: 'desc' },
+  });
+}
+
+/** Individual applications for the logged-in person (matched by ID, phone, or email). */
+export async function getUserIndividualMemberships(userId: string) {
+  const user = await loadUserIdentity(userId);
+  if (!user) return [];
+
+  const or = memberIdentityFiltersFromUser(user);
   if (or.length === 0) return [];
 
   const members = await prisma.groupMember.findMany({
@@ -122,6 +169,9 @@ export async function getUserIndividualMemberships(userId: string) {
     },
     orderBy: { updatedAt: 'desc' },
   });
+
+  const idDigits = digitsOnly(user.idNumber);
+  const localPhone = user.phoneNumber ? normalizeKenyanPhoneLocal(user.phoneNumber) : null;
 
   return members.filter((member) => {
     if (idDigits && digitsOnly(member.idNo) === idDigits) return true;

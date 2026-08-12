@@ -6,7 +6,7 @@ import {
 } from '@/app/login/login-actions';
 import { PhoneLoginForm } from '@/app/login/phone-login-form';
 import { getSessionUserId } from '@/lib/auth/session';
-import { resolveLoginSuccessPath } from '@/lib/auth/return-path';
+import { isGroupLoginIntent, isMemberLoginIntent, resolveLoginSuccessPath } from '@/lib/auth/return-path';
 import { MAJUU_NOINDEX_METADATA } from '@/lib/seo/site';
 import { Container } from '@workspace/ui/components/container';
 import { Divider } from '@workspace/ui/components/divider';
@@ -35,6 +35,8 @@ export default async function LoginPage({
         : 'ecitizen';
   const callbackUrl = params.callbackUrl;
   const loginSuccessPath = resolveLoginSuccessPath(callbackUrl);
+  const groupIntent = isGroupLoginIntent(callbackUrl);
+  const memberIntent = isMemberLoginIntent(callbackUrl);
   const t = await getTranslations('LoginPage');
 
   const userId = await getSessionUserId();
@@ -73,13 +75,42 @@ export default async function LoginPage({
           </p>
         </header>
 
-        <Card variant="primary" className="mb-6 space-y-3 p-4">
-          <h2 className="typo-h6 font-semibold">{t('memberCtaTitle')}</h2>
-          <p className="text-sm text-neutral-600">{t('memberCtaDescription')}</p>
-          <Button asChild className="w-full">
-            <Link href="/my-application">{t('memberCtaButton')}</Link>
-          </Button>
-        </Card>
+        <div className="mb-6 grid gap-3">
+          {groupIntent ? (
+            <Card variant="primary" className="space-y-3 p-4">
+              <h2 className="typo-h6 font-semibold">{t('groupCtaTitle')}</h2>
+              <p className="text-sm text-neutral-600">{t('groupCtaContinueDescription')}</p>
+              <Button asChild variant="secondary" className="w-full">
+                <Link href="/login?callbackUrl=/my-application">{t('memberCtaButton')}</Link>
+              </Button>
+            </Card>
+          ) : memberIntent ? (
+            <Card variant="primary" className="space-y-3 p-4">
+              <h2 className="typo-h6 font-semibold">{t('memberCtaTitle')}</h2>
+              <p className="text-sm text-neutral-600">{t('memberCtaDescription')}</p>
+              <Button asChild variant="secondary" className="w-full">
+                <Link href="/login?callbackUrl=/dashboard">{t('groupCtaButton')}</Link>
+              </Button>
+            </Card>
+          ) : (
+            <>
+              <Card variant="primary" className="space-y-3 p-4">
+                <h2 className="typo-h6 font-semibold">{t('groupCtaTitle')}</h2>
+                <p className="text-sm text-neutral-600">{t('groupCtaDescription')}</p>
+                <Button asChild className="w-full">
+                  <Link href="/login?callbackUrl=/dashboard">{t('groupCtaButton')}</Link>
+                </Button>
+              </Card>
+              <Card className="space-y-3 border border-neutral-200 bg-white p-4">
+                <h2 className="typo-h6 font-semibold">{t('memberCtaTitle')}</h2>
+                <p className="text-sm text-neutral-600">{t('memberCtaDescription')}</p>
+                <Button asChild variant="secondary" className="w-full">
+                  <Link href="/login?callbackUrl=/my-application">{t('memberCtaButton')}</Link>
+                </Button>
+              </Card>
+            </>
+          )}
+        </div>
 
         <section aria-labelledby="login-form-heading">
           <h2 id="login-form-heading" className="sr-only">
