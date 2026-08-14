@@ -1,6 +1,7 @@
 'use client';
 
 import { ApplyFormActionBar } from '@/components/apply-form-action-bar';
+import { FieldGuidance } from '@/components/field-guidance';
 import { FormField } from '@/components/form-field';
 import { saveBankAction } from './bank-action';
 import { groupBankSchema, type GroupBankInput } from './bank-schema';
@@ -174,21 +175,25 @@ export const BankForm: FC<BankFormProps> = ({ id, defaultValues }) => {
               </p>
             ) : null}
 
-            <FormField
-              name="accountName"
-              label="Bank Account Name"
-              required
-              state={state}
-              defaultValue={defaultValues?.accountName}
-            />
+            <FieldGuidance fieldKey="bankAccountName">
+              <FormField
+                name="accountName"
+                label="Bank Account Name"
+                required
+                state={state}
+                defaultValue={defaultValues?.accountName}
+              />
+            </FieldGuidance>
 
-            <FormField
-              name="accountNumber"
-              label="Bank Account Number"
-              required
-              state={state}
-              defaultValue={defaultValues?.accountNumber}
-            />
+            <FieldGuidance fieldKey="bankAccountNumber">
+              <FormField
+                name="accountNumber"
+                label="Bank Account Number"
+                required
+                state={state}
+                defaultValue={defaultValues?.accountNumber}
+              />
+            </FieldGuidance>
 
             <p className="typo-body-medium pt-2">
               <strong>NB: At least three applicants to be signatories.</strong>

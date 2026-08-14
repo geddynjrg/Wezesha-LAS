@@ -1,5 +1,6 @@
 'use client';
 
+import { FieldGuidance } from '@/components/field-guidance';
 import { FormField } from '@/components/form-field';
 import type { FormFieldState } from '@workspace/ui/components/form';
 import { Button } from '@workspace/ui/components/button';
@@ -237,22 +238,26 @@ export const MseaRegistrationFields: FC<MseaRegistrationFieldsProps> = ({
           {unavailableMessage ??
             'MSEA registration service is unavailable. Please enter your group details manually.'}
         </div>
-        <FormField
-          name="groupName"
-          label="Group Name"
-          required
-          state={state}
-          defaultValue={defaultValues?.groupName}
-          placeholder="Enter group name"
-        />
-        <FormField
-          name="registrationNumber"
-          label="Registration Number"
-          required
-          state={state}
-          defaultValue={defaultValues?.registrationNumber}
-          placeholder="e.g. RA-XXXXXX"
-        />
+        <FieldGuidance fieldKey="groupName">
+          <FormField
+            name="groupName"
+            label="Group Name"
+            required
+            state={state}
+            defaultValue={defaultValues?.groupName}
+            placeholder="Enter group name"
+          />
+        </FieldGuidance>
+        <FieldGuidance fieldKey="registrationNumber">
+          <FormField
+            name="registrationNumber"
+            label="Registration Number"
+            required
+            state={state}
+            defaultValue={defaultValues?.registrationNumber}
+            placeholder="e.g. RA-XXXXXX"
+          />
+        </FieldGuidance>
         <FormField
           name="registrationDate"
           label="Registration Date"

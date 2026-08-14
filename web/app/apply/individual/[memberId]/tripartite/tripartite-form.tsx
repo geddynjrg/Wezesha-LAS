@@ -2,6 +2,8 @@
 
 import { ApplyFormActionBar } from '@/components/apply-form-action-bar';
 import { TripartiteAgreementDocument } from '@/components/tripartite/tripartite-agreement-document';
+import { TripartiteReadinessChecklist } from '@/components/tripartite-readiness-checklist';
+import { buildPortalTripartiteReadiness } from '@/lib/tripartite-readiness';
 import { submitTripartiteAction } from './tripartite-action';
 import { tripartiteFormSchema } from './tripartite-schema';
 import { Container } from '@workspace/ui/components/container';
@@ -49,10 +51,34 @@ export const TripartiteForm: FC<TripartiteFormProps> = ({
     ...(defaultAccepted ? { tripartiteAccepted: 'on' as const } : {}),
   });
 
+  const readiness = useMemo(
+    () =>
+      buildPortalTripartiteReadiness({
+        migrantName,
+        idNumber: defaultIdNumber,
+        passportNumber: defaultPassportNumber,
+        migrantSignature,
+        labourPsSigned: Boolean(labourPsSignature && labourPsSignedAt),
+        msmePsSigned: Boolean(msmePsSignature && msmePsSignedAt),
+      }),
+    [
+      migrantName,
+      defaultIdNumber,
+      defaultPassportNumber,
+      migrantSignature,
+      labourPsSignature,
+      labourPsSignedAt,
+      msmePsSignature,
+      msmePsSignedAt,
+    ],
+  );
+
   return (
     <Form action={formAction}>
       <Container className="py-8">
         <FormCard title="Tripartite Agreement">
+          <TripartiteReadinessChecklist items={readiness} />
+
           <TripartiteAgreementDocument
             migrantName={migrantName}
             idNumber={defaultIdNumber}

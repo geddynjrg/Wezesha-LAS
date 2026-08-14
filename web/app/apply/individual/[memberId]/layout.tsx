@@ -1,5 +1,7 @@
+import { ApplicationGuidance } from '@/components/application-guidance';
 import { ApplyFormStepper } from '@/components/apply-form-stepper';
 import { INDIVIDUAL_STEPS } from '@/lib/constants/majuu-steps';
+import { resolveGuidanceForPath } from '@/lib/application-guidance';
 import { getIndividualApplication } from '@/lib/data/applications';
 import { isIndividualApplicationEditable } from '@/lib/individual-application-access';
 import { getSessionUserId } from '@/lib/auth/session';
@@ -43,6 +45,8 @@ export default async function IndividualApplyLayout({
     redirect(`/apply/individual/${memberId}/dashboard`);
   }
 
+  const guidance = editable ? resolveGuidanceForPath(pathname, 'individual') : null;
+
   return (
     <>
       {editable ? (
@@ -51,6 +55,11 @@ export default async function IndividualApplyLayout({
           applicationProgress={application.progress}
           baseUrl={`/apply/individual/${memberId}`}
         />
+      ) : null}
+      {editable ? (
+        <div className="mx-auto w-full max-w-5xl px-4 pt-4">
+          <ApplicationGuidance guidance={guidance} />
+        </div>
       ) : null}
       {children}
     </>

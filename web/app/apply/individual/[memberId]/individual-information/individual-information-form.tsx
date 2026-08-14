@@ -1,7 +1,9 @@
 'use client';
 
 import { ApplyFormActionBar } from '@/components/apply-form-action-bar';
+import { FieldGuidance } from '@/components/field-guidance';
 import { FormField } from '@/components/form-field';
+import { SoftDuplicateBanner } from '@/components/soft-duplicate-banner';
 import { saveIndividualInformationAction } from './individual-information-action';
 import {
   EDUCATION_LEVEL_OPTIONS,
@@ -19,7 +21,7 @@ import { Select } from '@workspace/ui/components/select';
 import { FormCard } from '@workspace/ui/components/uwezo/form-card';
 import { useForm } from '@workspace/ui/hooks/use-form';
 import { cn } from '@workspace/ui/lib/utils';
-import { type FC, useEffect, useMemo, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 
 interface IndividualInformationFormProps {
   memberId: string;
@@ -81,13 +83,30 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
     }
   }, [formValues.educationLevel]);
 
+  const [softAck, setSoftAck] = useState(false);
+  const [hasSoftDuplicate, setHasSoftDuplicate] = useState(false);
+  const onAckChange = useCallback((value: boolean) => setSoftAck(value), []);
+  const onDuplicateChange = useCallback((has: boolean) => setHasSoftDuplicate(has), []);
+
   return (
     <Form action={formAction} state={state}>
       <Container className="py-8">
         <FormCard title="Individual Information">
+          <SoftDuplicateBanner
+            phone={member.mobile}
+            nationalId={member.idNo}
+            memberId={memberId}
+            acknowledged={softAck}
+            onAcknowledgedChange={onAckChange}
+            onDuplicateChange={onDuplicateChange}
+            enabled
+          />
+
           <div className="grid gap-4 md:grid-cols-2">
             <ReadOnlyDisplay label="Full Name" value={member.name} />
-            <ReadOnlyDisplay label="National ID" value={member.idNo} />
+            <FieldGuidance fieldKey="nationalId">
+              <ReadOnlyDisplay label="National ID" value={member.idNo} />
+            </FieldGuidance>
 
             <Field
               state={state}
@@ -117,12 +136,14 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
               state={state}
               defaultValue={formValues.dob}
             />
-            <FormField
-              name="kraPin"
-              label="KRA PIN"
-              state={state}
-              defaultValue={formValues.kraPin}
-            />
+            <FieldGuidance fieldKey="kraPin">
+              <FormField
+                name="kraPin"
+                label="KRA PIN"
+                state={state}
+                defaultValue={formValues.kraPin}
+              />
+            </FieldGuidance>
 
             <Field
               state={state}
@@ -161,7 +182,9 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
               />
             )}
 
-            <ReadOnlyDisplay label="Mobile" value={member.mobile} />
+            <FieldGuidance fieldKey="phone">
+              <ReadOnlyDisplay label="Mobile" value={member.mobile} />
+            </FieldGuidance>
             <ReadOnlyDisplay label="Email" value={member.email} />
             <ReadOnlyDisplay label="Passport No" value={member.passportNo} />
             <FormField
@@ -196,7 +219,7 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
       </Container>
 
       <ApplyFormActionBar
-        disabled={isPending}
+        disabled={isPending || (hasSoftDuplicate && !softAck)}
         prevUrl="/apply/individual"
         submitLabel="Save & Continue"
       />

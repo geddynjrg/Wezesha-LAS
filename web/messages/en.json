@@ -44,6 +44,23 @@
   "LoginPage": {
     "title": "Get started",
     "description": "Log in or create an account to apply for the Wezesha Majuu loan.",
+    "roleStepTitle": "How are you applying?",
+    "roleStepDescription": "Choose your role first. Next you will log in with eCitizen, email, or phone.",
+    "roleStepHint": "Step 1 of 2",
+    "loginStepHint": "Step 2 of 2",
+    "individualRoleTitle": "Individual",
+    "individualRoleSubtitle": "I am a listed group member",
+    "individualRoleDescription": "Complete your personal application after the group chair has listed you.",
+    "individualRoleButton": "Continue as individual",
+    "groupRoleTitle": "Group (Group chair)",
+    "groupRoleSubtitle": "I represent the group",
+    "groupRoleDescription": "Start or continue the group application for your members.",
+    "groupRoleButton": "Continue as group chair",
+    "applyingAsIndividual": "Applying as an individual",
+    "applyingAsGroup": "Applying as group chair",
+    "changeRole": "Change",
+    "loginStepTitle": "Log in to continue",
+    "loginStepDescription": "Use eCitizen, email, or phone. Your application is saved at each step.",
     "flowDescription": "The application will be <bold>saved at each step</bold> and you can return to complete it by <bold>logging in.</bold>",
     "submittedDescription": "Once submitted, you can track the application progress <bold>through your account.</bold>",
     "doNotHaveAccount": "Don't have an account?",
@@ -154,5 +171,12 @@
       "approved": "Application approved",
       "rejected": "Application rejected"
     }
+  },
+  "ApplicationGuidance": {
+    "ariaLabel": "Application step guidance",
+    "title": "Guidance for {step}",
+    "subtitle": "Assistive tips only — they do not replace the form instructions or eligibility rules.",
+    "prepareHeading": "Prepare",
+    "mistakesHeading": "Common mistakes"
   }
 }
