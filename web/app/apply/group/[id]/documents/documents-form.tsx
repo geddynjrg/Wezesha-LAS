@@ -9,6 +9,7 @@ import {
 } from '@/lib/constants';
 import { GROUP_DOCUMENT_CATEGORIES, memberStorageToken } from '@/lib/group-document-categories';
 import { submitDocumentsAction } from './documents-action';
+import { DocumentCompletenessBanner } from '@/components/document-completeness-banner';
 import { Container } from '@workspace/ui/components/container';
 import { Field, Form } from '@workspace/ui/components/form';
 import { Input } from '@workspace/ui/components/input';
@@ -372,6 +373,9 @@ export const DocumentsForm: FC<DocumentsFormProps> = ({ id, members, initialDocu
             ))}
           </div>
 
+          <DocumentCompletenessBanner
+            messages={Object.values(state?.errors ?? {}).flat().filter(Boolean) as string[]}
+          />
           {state?.errors?.form ? (
             <p className="typo-body-medium mt-4 text-red-600">{state.errors.form.join(', ')}</p>
           ) : null}
