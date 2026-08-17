@@ -6,6 +6,8 @@ import {
   isTripartiteFullySigned,
 } from '@/lib/individual-application-access';
 import { getIndividualApplication } from '@/lib/data/applications';
+import { getPesaflowPayContext } from '@/lib/payments/pesaflow.service';
+import { PesaflowPayPanel } from '@/components/pesaflow-pay-panel';
 import { Container } from '@workspace/ui/components/container';
 import { Button } from '@workspace/ui/components/button';
 import { Card } from '@workspace/ui/components/uwezo/card';
@@ -34,6 +36,7 @@ export default async function IndividualDashboardPage({
   const canPredisbursement = canConsentToPredisbursement(app);
   const approvedAmount = money(app.awardAmount ?? app.member.amount);
   const base = `/apply/individual/${memberId}`;
+  const payContext = await getPesaflowPayContext(memberId).catch(() => null);
 
   return (
     <Container className="space-y-6 py-8">
@@ -211,6 +214,19 @@ export default async function IndividualDashboardPage({
           )}
         </Card>
       </div>
+
+      {payContext ? (
+        <Card radius="lg" className="border border-neutral-200 bg-white p-6">
+          <PesaflowPayPanel
+            memberId={memberId}
+            amount={payContext.amount}
+            configured={payContext.configured}
+            eligible={payContext.eligible}
+            reason={payContext.reason}
+            recent={payContext.recent}
+          />
+        </Card>
+      ) : null}
 
       <div className="flex flex-wrap gap-3">
         <Button asChild variant="secondary">

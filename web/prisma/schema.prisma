@@ -278,6 +278,7 @@ model IndividualApplication {
   tripartite           TripartiteData?
   tripartiteAccepted   Boolean           @default(false)
   documents            ApplicationDocument[]
+  paymentTransactions  PaymentTransaction[]
 
   @@index([acknowledgmentNumber])
   @@map("individual_applications")
@@ -460,4 +461,41 @@ model Ward {
 
   @@unique([constituencyId, name])
   @@map("wards")
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+model PaymentTransaction {
+  id                      String         @id @default(cuid())
+  individualApplicationId String
+  memberId                String
+  billRefNumber           String         @unique
+  amountExpected          Float
+  currency                String         @default("KES")
+  status                  PaymentStatus  @default(PENDING)
+  clientName              String
+  clientMSISDN            String
+  clientIDNumber          String
+  clientEmail             String
+  checkoutPayload         Json
+  pesaflowPaymentRef      String?
+  pesaflowInvoiceNumber   String?
+  paymentChannel          String?
+  amountPaid              Float?
+  ipnPayload              Json?
+  smsSentAt               DateTime?
+  lastReminderAt          DateTime?
+  completedAt             DateTime?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  individualApplication   IndividualApplication @relation(fields: [individualApplicationId], references: [id], onDelete: Cascade)
+  @@index([individualApplicationId])
+  @@index([memberId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payment_transactions")
 }
