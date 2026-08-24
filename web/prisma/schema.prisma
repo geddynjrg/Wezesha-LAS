@@ -1,0 +1,501 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ApplicationPhase {
+  GROUP
+  INDIVIDUAL
+}
+
+enum ApplicationStatus {
+  DRAFT
+  GROUP_SUBMITTED
+  INDIVIDUAL_IN_PROGRESS
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum MemberLoanStatus {
+  PENDING
+  INDIVIDUAL_DRAFT
+  INDIVIDUAL_SUBMITTED
+  AMOUNT_APPROVED
+  DISBURSED
+}
+
+enum GuarantorOtpStatus {
+  PENDING
+  SENT
+  VERIFIED
+  EXPIRED
+}
+
+enum IdentifierType {
+  EMAIL
+  PHONE
+  ECITIZEN
+}
+
+enum UserRole {
+  APPLICANT
+  PS_LABOUR
+  PS_MSME
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String?        @unique
+  phoneNumber    String?        @unique
+  passwordHash   String?
+  name           String?
+  idNumber       String?        @unique
+  kraPin         String?
+  ecitizenId     String?        @unique
+  identifierType IdentifierType @default(EMAIL)
+  role           UserRole       @default(APPLICANT)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  refreshTokens     RefreshToken[]
+  otpRequests       OtpRequest[]
+  groupApplications GroupApplication[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique @db.VarChar(255)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model OtpRequest {
+  id          String   @id @default(cuid())
+  requestId   String   @unique
+  phoneNumber String
+  otpHash     String
+  attempts    Int      @default(0)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([phoneNumber, createdAt])
+  @@map("otp_requests")
+}
+
+model EcitizenPkceState {
+  id           String   @id @default(cuid())
+  state        String   @unique
+  codeVerifier String   @db.Text
+  callbackUrl  String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@map("ecitizen_pkce_states")
+}
+
+model GroupApplication {
+  id                   String            @id @default(cuid())
+  acknowledgmentNumber String            @unique
+  status               ApplicationStatus @default(DRAFT)
+  phase                ApplicationPhase  @default(GROUP)
+  progress             Int               @default(1)
+  submittedAt          DateTime?
+  userId               String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  user                 User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  groupData            GroupData?
+  membership           GroupMembership?
+  background           GroupBackground?
+  bankAccount          GroupBankAccount?
+  termsAccepted        Boolean           @default(false)
+  members              GroupMember[]
+  documents            ApplicationDocument[]
+
+  @@index([status])
+  @@index([acknowledgmentNumber])
+  @@index([userId])
+  @@map("group_applications")
+}
+
+model GroupData {
+  id                   String           @id @default(cuid())
+  applicationId        String           @unique
+  groupName              String
+  registrationDate       DateTime?
+  registrationNumber     String
+  county                 String
+  constituency           String
+  ward                   String
+  location               String?
+  subLocation            String?
+  clusterCategory        String?
+  clusterCounty          String?
+  clusterConstituency    String?
+  clusterOther           String?
+  destinationRegion      String?
+  destinationCountry     String?
+  agency                 String?
+  agentNumber            String?
+  localAgentName         String?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  application            GroupApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("group_data")
+}
+
+model GroupMembership {
+  id                   String           @id @default(cuid())
+  applicationId        String           @unique
+  totalMales           Int              @default(0)
+  totalFemales         Int              @default(0)
+  totalDisabledMales   Int              @default(0)
+  totalDisabledFemales Int              @default(0)
+  totalMembers         Int              @default(0)
+  totalDisabled        Int              @default(0)
+  application          GroupApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("group_membership")
+}
+
+model GroupBackground {
+  id                 String           @id @default(cuid())
+  applicationId      String           @unique
+  purpose            String           @db.Text
+  proposedActivities String           @db.Text
+  application        GroupApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("group_background")
+}
+
+model GroupMember {
+  id                    String           @id @default(cuid())
+  applicationId         String
+  name                  String
+  idNo                  String
+  gender                String?
+  dob                   DateTime?
+  passportNo            String?
+  kraPin                String?
+  educationLevel        String?
+  poBox                 String?
+  postalCode            String?
+  town                  String?
+  dependants            Int?
+  mobile                String
+  email                 String?
+  subLocation           String?
+  purpose               String?
+  amount                Decimal?         @db.Decimal(12, 2)
+  loanStatus            MemberLoanStatus @default(PENDING)
+  signature             String?          @db.Text
+  amountRepaid          Decimal?         @db.Decimal(12, 2)
+  otpCode               String?
+  otpStatus             GuarantorOtpStatus @default(PENDING)
+  otpVerified           Boolean          @default(false)
+  otpSentAt             DateTime?
+  otpVerifiedAt         DateTime?
+  consentAmount         Decimal?         @db.Decimal(12, 2)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  application           GroupApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  individualApplication IndividualApplication?
+  consentOtpSends       MemberConsentOtpSend[]
+
+  @@unique([applicationId, idNo])
+  @@index([applicationId])
+  @@index([idNo])
+  @@map("group_members")
+}
+
+model MemberConsentOtpSend {
+  id          String      @id @default(cuid())
+  memberId    String
+  phoneNumber String
+  createdAt   DateTime    @default(now())
+  member      GroupMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId, createdAt])
+  @@index([phoneNumber, createdAt])
+  @@map("member_consent_otp_sends")
+}
+
+model GroupBankAccount {
+  id            String           @id @default(cuid())
+  applicationId String           @unique
+  bankName      String
+  branchName    String?
+  accountName   String
+  accountNumber String
+  application   GroupApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("group_bank_accounts")
+}
+
+model IndividualApplication {
+  id                         String            @id @default(cuid())
+  memberId                   String            @unique
+  acknowledgmentNumber       String            @unique
+  status                     ApplicationStatus @default(DRAFT)
+  progress                   Int               @default(1)
+  awardAmount                Decimal?          @db.Decimal(12, 2)
+  loanAmountApproved         Boolean           @default(false)
+  loanAmountApprovedAt       DateTime?
+  predisbursementAccepted    Boolean           @default(false)
+  predisbursementAcceptedAt  DateTime?
+  submittedAt                DateTime?
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+
+  member               GroupMember       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  location             LocationData?
+  guarantors           GuarantorData[]
+  recruitment          RecruitmentData?
+  budgetItems          BudgetItem[]
+  bankAccount          IndividualBankAccount?
+  creditHistory        CreditHistoryData?
+  creditHistoryLoans   CreditHistoryLoan[]
+  signature            SignatureData?
+  tripartite           TripartiteData?
+  tripartiteAccepted   Boolean           @default(false)
+  documents            ApplicationDocument[]
+  paymentTransactions  PaymentTransaction[]
+
+  @@index([acknowledgmentNumber])
+  @@map("individual_applications")
+}
+
+model LocationData {
+  id            String                @id @default(cuid())
+  applicationId String                @unique
+  county        String
+  constituency  String
+  ward          String
+  location      String?
+  subLocation   String?
+  application   IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("location_data")
+}
+
+model GuarantorData {
+  id              String                @id @default(cuid())
+  applicationId   String
+  guarantorNumber Int
+  name            String
+  gender          String
+  kraPin          String
+  county          String
+  constituency    String
+  ward            String
+  location        String?
+  subLocation     String?
+  nationalId      String
+  phone           String
+  otpCode         String?
+  otpStatus       GuarantorOtpStatus    @default(PENDING)
+  otpVerified     Boolean               @default(false)
+  otpSentAt       DateTime?
+  otpVerifiedAt   DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  application     IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, guarantorNumber])
+  @@index([applicationId])
+  @@map("guarantor_data")
+}
+
+model RecruitmentData {
+  id                   String                @id @default(cuid())
+  applicationId        String                @unique
+  localAgentName       String?
+  agentNumber          String?
+  employerAbroad       String?
+  recruiterCode        String?
+  countryOfDestination String?
+  natureOfWork         String?
+  durationType         String?
+  workDuration         String?
+  currency             String?
+  monthlyRemuneration  Decimal?              @db.Decimal(12, 2)
+  convertedKesAmount   Decimal?              @db.Decimal(12, 2)
+  application          IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("recruitment_data")
+}
+
+model BudgetItem {
+  id            String                @id @default(cuid())
+  applicationId String
+  item          String
+  cost          Decimal               @db.Decimal(12, 2)
+  application   IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("budget_items")
+}
+
+model IndividualBankAccount {
+  id            String                @id @default(cuid())
+  applicationId String                @unique
+  bankName      String
+  branchName    String?
+  accountName   String
+  accountNumber String
+  application   IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("individual_bank_accounts")
+}
+
+model CreditHistoryData {
+  id             String                @id @default(cuid())
+  applicationId  String                @unique
+  hasLoanHistory Boolean               @default(false)
+  application    IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("credit_history_data")
+}
+
+model CreditHistoryLoan {
+  id                 String                @id @default(cuid())
+  applicationId      String
+  lender             String
+  loanDate           DateTime?
+  amount             Decimal               @db.Decimal(12, 2)
+  duration           String
+  monthlyInstallment Decimal               @db.Decimal(12, 2)
+  outstandingAmount  Decimal               @db.Decimal(12, 2)
+  application        IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("credit_history_loans")
+}
+
+model SignatureData {
+  id              String                @id @default(cuid())
+  applicationId   String                @unique
+  digitalSignature String               @db.LongText
+  application     IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("signature_data")
+}
+
+model TripartiteData {
+  id                 String                @id @default(cuid())
+  applicationId      String                @unique
+  migrantName        String
+  idNumber           String
+  passportNumber     String
+  labourPsSignature  String?               @db.LongText
+  labourPsSignedAt   DateTime?
+  labourPsSignedBy   String?
+  msmePsSignature    String?               @db.LongText
+  msmePsSignedAt     DateTime?
+  msmePsSignedBy     String?
+  application        IndividualApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("tripartite_data")
+}
+
+model ApplicationDocument {
+  id                     String                 @id @default(cuid())
+  groupApplicationId     String?
+  individualApplicationId String?
+  category               String
+  fileName               String
+  storagePath            String
+  mimeType               String?
+  uploadedAt             DateTime               @default(now())
+  groupApplication       GroupApplication?      @relation(fields: [groupApplicationId], references: [id], onDelete: Cascade)
+  individualApplication  IndividualApplication? @relation(fields: [individualApplicationId], references: [id], onDelete: Cascade)
+
+  @@index([groupApplicationId])
+  @@index([individualApplicationId])
+  @@map("application_documents")
+}
+
+model County {
+  id             Int             @id @default(autoincrement())
+  name           String          @unique
+  constituencies Constituency[]
+
+  @@map("counties")
+}
+
+model Constituency {
+  id        Int     @id @default(autoincrement())
+  name      String
+  countyId  Int
+  county    County  @relation(fields: [countyId], references: [id], onDelete: Cascade)
+  wards     Ward[]
+
+  @@unique([countyId, name])
+  @@map("constituencies")
+}
+
+model Ward {
+  id             Int          @id @default(autoincrement())
+  name           String
+  constituencyId Int
+  constituency   Constituency @relation(fields: [constituencyId], references: [id], onDelete: Cascade)
+
+  @@unique([constituencyId, name])
+  @@map("wards")
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+model PaymentTransaction {
+  id                      String         @id @default(cuid())
+  individualApplicationId String
+  memberId                String
+  billRefNumber           String         @unique
+  amountExpected          Float
+  currency                String         @default("KES")
+  status                  PaymentStatus  @default(PENDING)
+  clientName              String
+  clientMSISDN            String
+  clientIDNumber          String
+  clientEmail             String
+  checkoutPayload         Json
+  pesaflowPaymentRef      String?
+  pesaflowInvoiceNumber   String?
+  paymentChannel          String?
+  amountPaid              Float?
+  ipnPayload              Json?
+  smsSentAt               DateTime?
+  lastReminderAt          DateTime?
+  completedAt             DateTime?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  individualApplication   IndividualApplication @relation(fields: [individualApplicationId], references: [id], onDelete: Cascade)
+  @@index([individualApplicationId])
+  @@index([memberId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payment_transactions")
+}

@@ -80,79 +80,31 @@ export function resolveReturnPath(explicit?: string | null): string {
   return '/dashboard';
 }
 
-export type ApplicantLoginRole = 'individual' | 'group';
-
-export function parseApplicantLoginRole(
-  role?: string | null,
-): ApplicantLoginRole | null {
-  if (role === 'individual' || role === 'group') {
-    return role;
-  }
-  return null;
-}
-
-export function defaultCallbackForRole(role: ApplicantLoginRole): string {
-  return role === 'individual' ? '/my-application' : '/dashboard';
-}
-
-/**
- * Only resume/start paths imply a role. Generic destinations like
- * /dashboard and /my-application still need an explicit choice.
- */
-export function inferApplicantLoginRoleFromCallback(
-  callbackUrl?: string | null,
-): ApplicantLoginRole | null {
+export function isGroupLoginIntent(callbackUrl?: string | null): boolean {
   if (!callbackUrl || !isValidReturnPath(callbackUrl)) {
-    return null;
+    return false;
   }
 
   const pathname = callbackUrl.split('?')[0] ?? '';
-
-  if (pathname === '/apply/create' || pathname.startsWith('/apply/group/')) {
-    return 'group';
-  }
-
-  if (
-    pathname === '/apply/individual' ||
-    pathname.startsWith('/apply/individual/')
-  ) {
-    return 'individual';
-  }
-
-  return null;
-}
-
-export function resolveApplicantLoginRole(
-  roleParam?: string | null,
-  callbackUrl?: string | null,
-): ApplicantLoginRole | null {
   return (
-    parseApplicantLoginRole(roleParam) ??
-    inferApplicantLoginRoleFromCallback(callbackUrl)
+    pathname === '/apply/create' ||
+    pathname === '/apply' ||
+    pathname.startsWith('/apply/group/') ||
+    pathname === '/dashboard'
   );
 }
 
-export function callbackForSelectedRole(
-  role: ApplicantLoginRole,
-  currentCallback?: string | null,
-): string {
-  const inferred = inferApplicantLoginRoleFromCallback(currentCallback);
-  if (
-    inferred === role &&
-    currentCallback &&
-    isValidReturnPath(currentCallback)
-  ) {
-    return currentCallback;
-  }
-  return defaultCallbackForRole(role);
-}
-
-export function isGroupLoginIntent(callbackUrl?: string | null): boolean {
-  return inferApplicantLoginRoleFromCallback(callbackUrl) === 'group';
-}
-
 export function isMemberLoginIntent(callbackUrl?: string | null): boolean {
-  return inferApplicantLoginRoleFromCallback(callbackUrl) === 'individual';
+  if (!callbackUrl || !isValidReturnPath(callbackUrl)) {
+    return false;
+  }
+
+  const pathname = callbackUrl.split('?')[0] ?? '';
+  return (
+    pathname === '/my-application' ||
+    pathname === '/apply/individual' ||
+    pathname.startsWith('/apply/individual/')
+  );
 }
 
 export function persistReturnPath(path: string): void {
