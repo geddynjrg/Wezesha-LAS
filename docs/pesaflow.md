@@ -45,11 +45,24 @@ Bill refs use prefix `WM-` (Wezesha Majuu) vs Core `WF-`.
 
 ## Merchant credentials
 
-Core and Majuu are both **Uwezo Fund** products. Ops may reuse the **same** Core `PESAFLOW_*` merchant for Majuu **if** Treasury confirms one Uwezo merchant account.
+**In-house note (live):** Majuu applicant portal now shares the **same Core loans merchant** `PESAFLOW_*` credentials (sourced from Core `uwezo-prod-web` / loans stacks). Values live only in gitignored env files / compose interpolation — **never** in this doc or git.
 
-If Majuu must be a separate merchant, Treasury / PesaFlow must issue Majuu-specific credentials. Leave vars empty until then — UI shows a clear “not configured” state; APIs return a structured error.
+Wire via:
 
-**Do not commit secrets.** Wire values via compose / host env / gitignored `portal/web/.env`.
+- `/home/administrator/majuu_backend/.env` (compose `${PESAFLOW_*}` for `majuu-applicant-portal`)
+- `portal/web/.env` (`env_file` for the portal container)
+
+`NEXT_PUBLIC_APP_URL` / `APP_URL` must be `https://majuu.uwezo.go.ke` so success redirects and notification URLs are correct.
+
+### Callback whitelist (external — Treasury / PesaFlow merchant portal)
+
+Register / whitelist:
+
+`https://majuu.uwezo.go.ke/api/payments/pesaflow/callback`
+
+This host cannot change the PesaFlow merchant portal unless an API exists. Until Treasury adds the Majuu callback URL, IPNs may not land even when `GET /api/payments/pesaflow/health` reports `configured: true`.
+
+**Do not commit secrets.**
 
 ---
 
