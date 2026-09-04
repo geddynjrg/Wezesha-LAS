@@ -16,17 +16,35 @@ export function plainMajuuStatus(status: string | null | undefined): string {
   return MAJUU_STATUS_LABELS[status] || status.replace(/_/g, ' ').toLowerCase();
 }
 
+export type ChatQuickReply = { id: string; label: string; value: string };
+
+export const MAIN_MENU_REPLIES: ChatQuickReply[] = [
+  { id: 'apply', label: '1. Apply for a loan', value: 'apply' },
+  {
+    id: 'status',
+    label: '2. Check status of loan application',
+    value: 'status',
+  },
+];
+
+export const APPLY_TYPE_REPLIES: ChatQuickReply[] = [
+  {
+    id: 'individual',
+    label: '1. Continue to Individual Application',
+    value: 'individual',
+  },
+  { id: 'group', label: '2. Group Application', value: 'group' },
+];
+
 export const MAJUU_APPLY_MENU = [
   {
     id: 'apply',
     label: 'Apply for a loan',
     reply:
-      'You can start or continue a Wezesha Majuu application:\n' +
-      '• Group chair: /apply/create\n' +
-      '• Individual member: /apply/individual\n' +
-      '• Dashboard: /dashboard\n\n' +
-      'I can guide document uploads here. Reply with: ID, KRA, or passport — then attach the file. ' +
-      'Or open the Documents step in the apply wizard for the full checklist.',
+      'Choose how to continue:\n' +
+      '1. Continue to Individual Application\n' +
+      '2. Group Application\n\n' +
+      'Prefer continuing an in-progress application rather than starting a new one.',
   },
   {
     id: 'status',

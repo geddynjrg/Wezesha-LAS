@@ -1,9 +1,14 @@
 export interface RecruitmentAgency {
   neaRegNo: string;
   agencyName: string;
+  status?: string;
+  source?: string;
+  companyRegNo?: string;
+  expiryDate?: string | null;
 }
 
 const AGENCIES_CSV_URL = '/data/Agencies.csv';
+const SEARCH_API = '/api/agencies/search';
 const MAX_RESULTS = 25;
 
 let agenciesCache: RecruitmentAgency[] | null = null;
@@ -77,7 +82,7 @@ function parseAgenciesCsv(csvText: string): RecruitmentAgency[] {
       continue;
     }
 
-    agencies.push({ neaRegNo, agencyName });
+    agencies.push({ neaRegNo, agencyName, status, source: 'csv' });
   }
 
   return agencies;
@@ -111,8 +116,13 @@ function normalizeAgencySearchValue(value: string): string {
 function agencyMatchesQuery(agency: RecruitmentAgency, normalizedQuery: string): boolean {
   const regNo = normalizeAgencySearchValue(agency.neaRegNo);
   const agencyName = normalizeAgencySearchValue(agency.agencyName);
+  const company = normalizeAgencySearchValue(agency.companyRegNo || '');
 
-  return regNo.includes(normalizedQuery) || agencyName.includes(normalizedQuery);
+  return (
+    regNo.includes(normalizedQuery) ||
+    agencyName.includes(normalizedQuery) ||
+    (company.length > 0 && company.includes(normalizedQuery))
+  );
 }
 
 function agencySearchRank(agency: RecruitmentAgency, normalizedQuery: string): number {
@@ -158,6 +168,21 @@ function searchLocalAgencies(
   return matches.slice(0, MAX_RESULTS);
 }
 
+async function searchViaPortalApi(query: string): Promise<RecruitmentAgency[] | null> {
+  try {
+    const response = await fetch(
+      `${SEARCH_API}?q=${encodeURIComponent(query)}`,
+      { credentials: 'same-origin' },
+    );
+    if (!response.ok) return null;
+    const data = (await response.json()) as { results?: RecruitmentAgency[] };
+    if (!Array.isArray(data.results)) return null;
+    return data.results;
+  } catch {
+    return null;
+  }
+}
+
 async function searchExternalAgencies(
   query: string,
 ): Promise<RecruitmentAgency[]> {
@@ -187,6 +212,10 @@ async function searchExternalAgencies(
   );
 }
 
+/**
+ * Search by agency name OR registration number.
+ * Prefers live NEAIMS via /api/agencies/search, then CSV, then optional external URL.
+ */
 export async function searchRecruitmentAgencies(
   query: string,
 ): Promise<RecruitmentAgency[]> {
@@ -195,11 +224,21 @@ export async function searchRecruitmentAgencies(
     return [];
   }
 
+  const fromApi = await searchViaPortalApi(trimmed);
+  if (fromApi && fromApi.length > 0) {
+    return fromApi.slice(0, MAX_RESULTS);
+  }
+
   try {
     const agencies = await loadAgenciesFromCsv();
-    return searchLocalAgencies(agencies, trimmed);
+    const local = searchLocalAgencies(agencies, trimmed);
+    if (local.length > 0) return local;
   } catch {
-    // Fall through to optional external lookup when CSV is unavailable.
+    /* fall through */
+  }
+
+  if (fromApi) {
+    return fromApi;
   }
 
   try {
@@ -214,5 +253,9 @@ export function findAgencyByRegNo(
   regNo: string,
 ): RecruitmentAgency | undefined {
   const normalized = regNo.trim().toLowerCase();
-  return agencies.find((agency) => agency.neaRegNo.toLowerCase() === normalized);
+  return agencies.find(
+    (agency) =>
+      agency.neaRegNo.toLowerCase() === normalized ||
+      (agency.companyRegNo || '').toLowerCase() === normalized,
+  );
 }

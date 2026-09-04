@@ -1,6 +1,10 @@
 'use client';
 
 import { answerAssistiveChat, type ChatMessage } from '@/lib/assistive-chatbot-faq';
+import {
+  MAIN_MENU_REPLIES,
+  type ChatQuickReply,
+} from '@/lib/assistive-chat-guidance';
 import { Button } from '@workspace/ui/components/button';
 import { usePathname } from 'next/navigation';
 import {
@@ -20,6 +24,8 @@ type Phase =
   | 'await_username'
   | 'await_password'
   | 'menu'
+  | 'apply_choice'
+  | 'group_list'
   | 'status_wait'
   | 'apply_docs'
   | 'open';
@@ -44,6 +50,11 @@ function pushAssistant(
   setMessages((prev) => [...prev, { role: 'assistant', content }]);
 }
 
+function isMobileViewport(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
 export const AssistiveChatbot: FC<{
   productLabel?: string;
   supportWhatsApp?: string;
@@ -57,11 +68,13 @@ export const AssistiveChatbot: FC<{
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<Phase>('boot');
   const [username, setUsername] = useState('');
+  const [quickReplies, setQuickReplies] = useState<ChatQuickReply[]>([]);
   const [docType, setDocType] = useState<'national_id' | 'kra_pin' | 'passport'>(
     'national_id',
   );
   const fileRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const autoOpened = useRef(false);
 
   const whatsappHref = useMemo(
     () => waLink(supportWhatsApp || ''),
@@ -70,14 +83,35 @@ export const AssistiveChatbot: FC<{
   const hide = pathname.startsWith('/ps');
   const passwordMode = phase === 'await_password';
 
+  useEffect(() => {
+    if (autoOpened.current || hide) return;
+    if (isMobileViewport()) {
+      autoOpened.current = true;
+      setOpen(true);
+      setPhase('boot');
+    }
+  }, [hide]);
+
   const startAuthFlow = useCallback(() => {
     setPhase('await_username');
     setUsername('');
+    setQuickReplies([]);
     setMessages([
       {
         role: 'assistant',
         content:
           'Welcome to the Wezesha Majuu assistant. To continue, enter your account email (username).',
+      },
+    ]);
+  }, []);
+
+  const showSignedInMenu = useCallback(() => {
+    setPhase('menu');
+    setQuickReplies(MAIN_MENU_REPLIES);
+    setMessages([
+      {
+        role: 'assistant',
+        content: 'Signed in successfully.\nWhat would you like to do?',
       },
     ]);
   }, []);
@@ -91,14 +125,7 @@ export const AssistiveChatbot: FC<{
         const data = (await res.json()) as { authenticated?: boolean };
         if (cancelled) return;
         if (data.authenticated) {
-          setPhase('menu');
-          setMessages([
-            {
-              role: 'assistant',
-              content:
-                'You are signed in. What would you like to do?\n1. Apply for a loan\n2. Check status of loan application\n\nReply 1 or 2 (or ask a question).',
-            },
-          ]);
+          showSignedInMenu();
         } else {
           startAuthFlow();
         }
@@ -109,7 +136,7 @@ export const AssistiveChatbot: FC<{
     return () => {
       cancelled = true;
     };
-  }, [open, phase, startAuthFlow]);
+  }, [open, phase, startAuthFlow, showSignedInMenu]);
 
   const login = useCallback(async (user: string, password: string) => {
     const res = await fetch('/api/assistive-chat/login', {
@@ -117,24 +144,76 @@ export const AssistiveChatbot: FC<{
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: user, password }),
     });
-    const data = (await res.json()) as { ok?: boolean; error?: string; message?: string };
-    return data;
+    return (await res.json()) as { ok?: boolean; error?: string; message?: string };
   }, []);
+
+  const applyServerPayload = useCallback(
+    (data: {
+      reply?: string;
+      needAuth?: boolean;
+      expectReference?: boolean;
+      quickReplies?: ChatQuickReply[];
+      phase?: string;
+      openUrl?: string;
+    }) => {
+      if (data.needAuth) {
+        startAuthFlow();
+        return;
+      }
+      if (data.expectReference) setPhase('status_wait');
+      if (data.phase === 'apply_choice') setPhase('apply_choice');
+      if (data.phase === 'group_list') setPhase('group_list');
+      if (data.phase === 'apply_docs') setPhase('apply_docs');
+      if (data.phase === 'individual') setPhase('apply_choice');
+      if (Array.isArray(data.quickReplies)) setQuickReplies(data.quickReplies);
+      pushAssistant(setMessages, data.reply || 'OK');
+      if (data.openUrl && typeof window !== 'undefined') {
+        // Deep-link offered via quick reply; do not force navigation.
+      }
+    },
+    [startAuthFlow],
+  );
+
+  const postChat = useCallback(
+    async (payload: Record<string, string>) => {
+      const res = await fetch('/api/assistive-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, path: pathname }),
+      });
+      return (await res.json()) as {
+        reply?: string;
+        needAuth?: boolean;
+        expectReference?: boolean;
+        quickReplies?: ChatQuickReply[];
+        phase?: string;
+        openUrl?: string;
+      };
+    },
+    [pathname],
+  );
 
   const send = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || busy) return;
       setBusy(true);
-      const displayUser =
-        phase === 'await_password' ? '••••••••' : trimmed;
+      const displayUser = phase === 'await_password' ? '••••••••' : trimmed;
       setMessages((prev) => [...prev, { role: 'user', content: displayUser }]);
       setInput('');
 
       try {
+        if (trimmed.startsWith('open:')) {
+          const href = trimmed.slice(5);
+          if (href.startsWith('/')) window.location.href = href;
+          setBusy(false);
+          return;
+        }
+
         if (phase === 'await_username') {
           setUsername(trimmed);
           setPhase('await_password');
+          setQuickReplies([]);
           pushAssistant(
             setMessages,
             'Enter your password (it stays masked and is not stored in this chat).',
@@ -144,8 +223,7 @@ export const AssistiveChatbot: FC<{
         }
 
         if (phase === 'await_password') {
-          const password = trimmed; // in-memory only for this request; never persisted
-          const result = await login(username, password);
+          const result = await login(username, trimmed);
           if (!result.ok) {
             pushAssistant(
               setMessages,
@@ -156,29 +234,19 @@ export const AssistiveChatbot: FC<{
             setBusy(false);
             return;
           }
-          setPhase('menu');
-          pushAssistant(
-            setMessages,
-            `${result.message || 'Signed in.'}\n\nWhat would you like to do?\n1. Apply for a loan\n2. Check status of loan application`,
-          );
+          showSignedInMenu();
           setBusy(false);
           return;
         }
 
         if (phase === 'status_wait') {
-          const res = await fetch('/api/assistive-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'status',
-              reference: trimmed,
-              message: trimmed,
-              path: pathname,
-            }),
+          const data = await postChat({
+            action: 'status',
+            reference: trimmed,
+            message: trimmed,
           });
-          const data = (await res.json()) as { reply?: string };
-          pushAssistant(setMessages, data.reply || 'Unable to look up that reference.');
-          setPhase('menu');
+          applyServerPayload(data);
+          if (!data.expectReference) setPhase('menu');
           setBusy(false);
           return;
         }
@@ -188,73 +256,94 @@ export const AssistiveChatbot: FC<{
           if (lower.includes('kra')) setDocType('kra_pin');
           else if (lower.includes('passport')) setDocType('passport');
           else if (lower.includes('id')) setDocType('national_id');
-          pushAssistant(
-            setMessages,
-            `Ready for ${lower.includes('kra') ? 'KRA PIN' : lower.includes('passport') ? 'passport' : 'National ID'} upload. Use the Attach button below, or open /apply to finish official uploads.`,
-          );
-          setBusy(false);
-          return;
-        }
-
-        // Menu / general
-        if (/^(1|apply)\b/i.test(trimmed)) {
-          setPhase('apply_docs');
-          const res = await fetch('/api/assistive-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'apply_guide', message: trimmed, path: pathname }),
-          });
-          const data = (await res.json()) as { reply?: string; needAuth?: boolean };
-          if (data.needAuth) {
-            startAuthFlow();
+          else if (lower === 'menu') {
+            showSignedInMenu();
             setBusy(false);
             return;
           }
           pushAssistant(
             setMessages,
-            (data.reply || '') +
-              '\n\nDocument checklist: reply ID, KRA, or passport, then Attach a file for an assistive authenticity check.',
+            `Ready for ${
+              lower.includes('kra')
+                ? 'KRA PIN'
+                : lower.includes('passport')
+                  ? 'passport'
+                  : 'National ID'
+            } upload. Use Attach below, or open the apply Documents step.`,
           );
           setBusy(false);
           return;
         }
 
-        if (/^(2|status)\b/i.test(trimmed)) {
+        if (/^(apply|1)$/i.test(trimmed) || phase === 'menu' && trimmed === 'apply') {
+          const data = await postChat({ action: 'apply', message: trimmed });
+          applyServerPayload(data);
+          setBusy(false);
+          return;
+        }
+
+        if (/^(status|2)$/i.test(trimmed)) {
           setPhase('status_wait');
-          pushAssistant(
-            setMessages,
-            'Send your acknowledgment / reference number (or type “list”).',
-          );
+          const data = await postChat({ action: 'status', message: 'status' });
+          applyServerPayload(data);
           setBusy(false);
           return;
         }
 
-        let reply = answerAssistiveChat(trimmed);
-        const res = await fetch('/api/assistive-chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: trimmed, path: pathname }),
-        });
-        if (res.ok) {
-          const data = (await res.json()) as {
-            reply?: string;
-            needAuth?: boolean;
-            expectReference?: boolean;
-          };
-          if (data.needAuth) {
-            startAuthFlow();
-            setBusy(false);
-            return;
-          }
-          if (data.expectReference) setPhase('status_wait');
-          if (data.reply) reply = data.reply;
+        if (
+          phase === 'apply_choice' &&
+          (/^individual$/i.test(trimmed) || trimmed.startsWith('1'))
+        ) {
+          const data = await postChat({ action: 'individual', message: 'individual' });
+          applyServerPayload(data);
+          setBusy(false);
+          return;
         }
-        pushAssistant(setMessages, reply);
+
+        if (
+          phase === 'apply_choice' &&
+          (/^group$/i.test(trimmed) || trimmed.startsWith('2'))
+        ) {
+          const data = await postChat({ action: 'group', message: 'group' });
+          applyServerPayload(data);
+          setBusy(false);
+          return;
+        }
+
+        // Generic / continue:* / group / menu / docs
+        let action = 'auto';
+        if (/^menu$/i.test(trimmed)) action = 'menu';
+        else if (/^group$/i.test(trimmed)) action = 'group';
+        else if (/^individual$/i.test(trimmed)) action = 'individual';
+        else if (/^new_group$/i.test(trimmed)) action = 'new_group';
+        else if (/^docs$/i.test(trimmed)) action = 'docs';
+        else if (/^continue:/i.test(trimmed)) action = trimmed;
+        else if (/^individual_continue:/i.test(trimmed)) action = trimmed;
+        else if (/^list$/i.test(trimmed)) action = 'status';
+
+        const data = await postChat({
+          action,
+          message: trimmed,
+          reference: trimmed,
+        });
+        if (!data.reply && !data.needAuth) {
+          pushAssistant(setMessages, answerAssistiveChat(trimmed));
+        } else {
+          applyServerPayload(data);
+        }
       } finally {
         setBusy(false);
       }
     },
-    [busy, phase, username, login, pathname, startAuthFlow],
+    [
+      busy,
+      phase,
+      username,
+      login,
+      postChat,
+      applyServerPayload,
+      showSignedInMenu,
+    ],
   );
 
   const onUpload = useCallback(
@@ -279,7 +368,10 @@ export const AssistiveChatbot: FC<{
           error?: string;
         };
         if (!res.ok) {
-          pushAssistant(setMessages, data.error || 'Upload check failed. Sign in and try again.');
+          pushAssistant(
+            setMessages,
+            data.error || 'Upload check failed. Sign in and try again.',
+          );
           if (res.status === 401) startAuthFlow();
         } else {
           pushAssistant(
@@ -288,7 +380,10 @@ export const AssistiveChatbot: FC<{
           );
         }
       } catch {
-        pushAssistant(setMessages, 'Could not check that file. Try again or use the apply Documents step.');
+        pushAssistant(
+          setMessages,
+          'Could not check that file. Try again or use the apply Documents step.',
+        );
       }
       setBusy(false);
     },
@@ -300,7 +395,7 @@ export const AssistiveChatbot: FC<{
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-2 sm:bottom-6 sm:right-6">
       {open ? (
-        <div className="pointer-events-auto flex h-[min(72svh,560px)] w-[min(100vw-1.5rem,380px)] flex-col overflow-hidden rounded-lg border border-border bg-background shadow-lg">
+        <div className="pointer-events-auto flex h-[min(78svh,600px)] w-[min(100vw-1.5rem,400px)] flex-col overflow-hidden rounded-lg border border-border bg-background shadow-lg">
           <header className="flex items-center justify-between gap-2 border-b bg-sky-50 px-3 py-2">
             <div>
               <p className="text-sm font-semibold text-sky-950">{productLabel}</p>
@@ -329,8 +424,23 @@ export const AssistiveChatbot: FC<{
                 {m.content}
               </div>
             ))}
+            {quickReplies.length > 0 && !passwordMode ? (
+              <div className="mr-2 flex flex-wrap gap-1.5 pt-1">
+                {quickReplies.map((qr) => (
+                  <button
+                    key={qr.id}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void send(qr.value)}
+                    className="rounded-full border border-sky-300 bg-sky-50 px-2.5 py-1 text-left text-xs font-medium text-sky-950 hover:bg-sky-100 disabled:opacity-50"
+                  >
+                    {qr.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
-          {phase === 'apply_docs' ? (
+          {phase === 'apply_docs' || phase === 'group_list' ? (
             <div className="flex items-center gap-2 border-t px-2 py-1.5">
               <input
                 ref={fileRef}
@@ -349,9 +459,17 @@ export const AssistiveChatbot: FC<{
                 variant="secondary"
                 className="text-xs"
                 disabled={busy}
-                onClick={() => fileRef.current?.click()}
+                onClick={() => {
+                  setPhase('apply_docs');
+                  fileRef.current?.click();
+                }}
               >
-                Attach {docType === 'kra_pin' ? 'KRA' : docType === 'passport' ? 'passport' : 'ID'}
+                Attach{' '}
+                {docType === 'kra_pin'
+                  ? 'KRA'
+                  : docType === 'passport'
+                    ? 'passport'
+                    : 'ID'}
               </Button>
               <a href="/apply" className="text-xs text-sky-800 underline">
                 Open apply
@@ -415,3 +533,4 @@ export const AssistiveChatbot: FC<{
     </div>
   );
 };
+
