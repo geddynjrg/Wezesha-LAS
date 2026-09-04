@@ -2,6 +2,8 @@ import { LazyAppSidebar } from '@/components/lazy-app-sidebar';
 import { LazyMajuuHeader } from '@/components/lazy-majuu-header';
 import { MajuuFooter } from '@/components/majuu-footer';
 import { Providers } from '@/components/providers';
+import { AssistiveChatbot } from '@/components/assistive-chatbot';
+import { DataConsentNotice } from '@/components/data-consent-notice';
 import { MajuuJsonLd } from '@/components/seo/json-ld';
 import { createMajuuMetadata } from '@/lib/seo/site';
 import type { Locale } from '@/i18n/config';
@@ -77,6 +79,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               <Suspense fallback={null}>
                 <MajuuFooter />
               </Suspense>
+            ) : null}
+            {!isPsRoute ? (
+              <>
+                <DataConsentNotice gateApply />
+                <AssistiveChatbot />
+              </>
             ) : null}
           </Providers>
         </NextIntlClientProvider>
