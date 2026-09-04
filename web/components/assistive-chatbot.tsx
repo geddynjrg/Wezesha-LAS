@@ -28,7 +28,20 @@ type Phase =
   | 'group_list'
   | 'status_wait'
   | 'apply_docs'
+  | 'stage_pick'
+  | 'field_pick'
+  | 'await_field'
+  | 'await_upload'
   | 'open';
+
+type FieldContext = {
+  kind: 'group' | 'individual';
+  appId: string;
+  stage: number;
+  field: string;
+  label: string;
+  uploadCategory?: string;
+};
 
 const WHATSAPP_ENV =
   typeof process !== 'undefined'
@@ -72,6 +85,7 @@ export const AssistiveChatbot: FC<{
   const [docType, setDocType] = useState<'national_id' | 'kra_pin' | 'passport'>(
     'national_id',
   );
+  const [fieldContext, setFieldContext] = useState<FieldContext | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const autoOpened = useRef(false);
@@ -82,6 +96,10 @@ export const AssistiveChatbot: FC<{
   );
   const hide = pathname.startsWith('/ps');
   const passwordMode = phase === 'await_password';
+  const showUpload =
+    phase === 'apply_docs' ||
+    phase === 'group_list' ||
+    phase === 'await_upload';
 
   useEffect(() => {
     if (autoOpened.current || hide) return;
@@ -96,6 +114,7 @@ export const AssistiveChatbot: FC<{
     setPhase('await_username');
     setUsername('');
     setQuickReplies([]);
+    setFieldContext(null);
     setMessages([
       {
         role: 'assistant',
@@ -108,6 +127,7 @@ export const AssistiveChatbot: FC<{
   const showSignedInMenu = useCallback(() => {
     setPhase('menu');
     setQuickReplies(MAIN_MENU_REPLIES);
+    setFieldContext(null);
     setMessages([
       {
         role: 'assistant',
@@ -152,20 +172,33 @@ export const AssistiveChatbot: FC<{
       reply?: string;
       needAuth?: boolean;
       expectReference?: boolean;
+      expectFieldValue?: boolean;
+      expectUpload?: boolean;
       quickReplies?: ChatQuickReply[];
       phase?: string;
       openUrl?: string;
       navigate?: boolean;
+      fieldContext?: FieldContext;
     }) => {
       if (data.needAuth) {
         startAuthFlow();
         return;
       }
       if (data.expectReference) setPhase('status_wait');
+      if (data.expectFieldValue) setPhase('await_field');
+      if (data.expectUpload) setPhase('await_upload');
       if (data.phase === 'apply_choice') setPhase('apply_choice');
       if (data.phase === 'group_list') setPhase('group_list');
       if (data.phase === 'apply_docs') setPhase('apply_docs');
+      if (data.phase === 'stage_pick') setPhase('stage_pick');
+      if (data.phase === 'field_pick') setPhase('field_pick');
+      if (data.phase === 'await_field') setPhase('await_field');
+      if (data.phase === 'await_upload') setPhase('await_upload');
       if (data.phase === 'individual') setPhase('apply_choice');
+      if (data.fieldContext) setFieldContext(data.fieldContext);
+      else if (data.phase === 'stage_pick' || data.phase === 'field_pick') {
+        setFieldContext(null);
+      }
       if (Array.isArray(data.quickReplies)) setQuickReplies(data.quickReplies);
       pushAssistant(setMessages, data.reply || 'OK');
       if (
@@ -183,21 +216,24 @@ export const AssistiveChatbot: FC<{
   );
 
   const postChat = useCallback(
-    async (payload: Record<string, string>) => {
+    async (payload: Record<string, string | number>) => {
       const res = await fetch('/api/assistive-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, path: pathname }),
       });
-        return (await res.json()) as {
-          reply?: string;
-          needAuth?: boolean;
-          expectReference?: boolean;
-          quickReplies?: ChatQuickReply[];
-          phase?: string;
-          openUrl?: string;
-          navigate?: boolean;
-        };
+      return (await res.json()) as {
+        reply?: string;
+        needAuth?: boolean;
+        expectReference?: boolean;
+        expectFieldValue?: boolean;
+        expectUpload?: boolean;
+        quickReplies?: ChatQuickReply[];
+        phase?: string;
+        openUrl?: string;
+        navigate?: boolean;
+        fieldContext?: FieldContext;
+      };
     },
     [pathname],
   );
@@ -248,6 +284,37 @@ export const AssistiveChatbot: FC<{
           return;
         }
 
+        if (phase === 'await_field' && fieldContext) {
+          if (/^menu$/i.test(trimmed)) {
+            showSignedInMenu();
+            setBusy(false);
+            return;
+          }
+          if (
+            trimmed.startsWith('stage:') ||
+            trimmed.startsWith('continue:') ||
+            trimmed.startsWith('individual_continue:') ||
+            trimmed.startsWith('field:')
+          ) {
+            const data = await postChat({ action: trimmed, message: trimmed });
+            applyServerPayload(data);
+            setBusy(false);
+            return;
+          }
+          const data = await postChat({
+            action: 'set_field',
+            message: trimmed,
+            value: trimmed,
+            kind: fieldContext.kind,
+            appId: fieldContext.appId,
+            stage: fieldContext.stage,
+            field: fieldContext.field,
+          });
+          applyServerPayload(data);
+          setBusy(false);
+          return;
+        }
+
         if (phase === 'status_wait') {
           const data = await postChat({
             action: 'status',
@@ -269,6 +336,17 @@ export const AssistiveChatbot: FC<{
             showSignedInMenu();
             setBusy(false);
             return;
+          } else if (
+            trimmed.startsWith('continue:') ||
+            trimmed.startsWith('stage:') ||
+            trimmed.startsWith('field:') ||
+            trimmed.startsWith('individual_continue:') ||
+            trimmed.startsWith('status_ref:')
+          ) {
+            const data = await postChat({ action: trimmed, message: trimmed });
+            applyServerPayload(data);
+            setBusy(false);
+            return;
           }
           pushAssistant(
             setMessages,
@@ -284,7 +362,7 @@ export const AssistiveChatbot: FC<{
           return;
         }
 
-        if (/^(apply|1)$/i.test(trimmed) || phase === 'menu' && trimmed === 'apply') {
+        if (/^(apply|1)$/i.test(trimmed) || (phase === 'menu' && trimmed === 'apply')) {
           const data = await postChat({ action: 'apply', message: trimmed });
           applyServerPayload(data);
           setBusy(false);
@@ -303,7 +381,10 @@ export const AssistiveChatbot: FC<{
           phase === 'apply_choice' &&
           (/^individual$/i.test(trimmed) || trimmed.startsWith('1'))
         ) {
-          const data = await postChat({ action: 'individual', message: 'individual' });
+          const data = await postChat({
+            action: 'individual',
+            message: 'individual',
+          });
           applyServerPayload(data);
           setBusy(false);
           return;
@@ -319,7 +400,6 @@ export const AssistiveChatbot: FC<{
           return;
         }
 
-        // Generic / continue:* / group / menu / docs
         let action = 'auto';
         if (/^menu$/i.test(trimmed)) action = 'menu';
         else if (/^group$/i.test(trimmed)) action = 'group';
@@ -329,6 +409,8 @@ export const AssistiveChatbot: FC<{
         else if (/^continue:/i.test(trimmed)) action = trimmed;
         else if (/^individual_continue:/i.test(trimmed)) action = trimmed;
         else if (/^status_ref:/i.test(trimmed)) action = trimmed;
+        else if (/^stage:/i.test(trimmed)) action = trimmed;
+        else if (/^field:/i.test(trimmed)) action = trimmed;
         else if (/^list$/i.test(trimmed)) action = 'status';
 
         const data = await postChat({
@@ -349,6 +431,7 @@ export const AssistiveChatbot: FC<{
       busy,
       phase,
       username,
+      fieldContext,
       login,
       postChat,
       applyServerPayload,
@@ -368,6 +451,14 @@ export const AssistiveChatbot: FC<{
         const form = new FormData();
         form.set('file', file);
         form.set('declaredType', docType);
+        if (fieldContext?.kind === 'group' && fieldContext.appId) {
+          form.set('applicationId', fieldContext.appId);
+          form.set(
+            'category',
+            fieldContext.uploadCategory || fieldContext.field,
+          );
+          form.set('persist', '1');
+        }
         const res = await fetch('/api/assistive-chat/upload', {
           method: 'POST',
           body: form,
@@ -376,6 +467,8 @@ export const AssistiveChatbot: FC<{
           reply?: string;
           nextHint?: string;
           error?: string;
+          quickReplies?: ChatQuickReply[];
+          phase?: string;
         };
         if (!res.ok) {
           pushAssistant(
@@ -388,6 +481,19 @@ export const AssistiveChatbot: FC<{
             setMessages,
             `${data.reply || 'Checked.'}\n${data.nextHint || ''}`,
           );
+          if (Array.isArray(data.quickReplies)) {
+            setQuickReplies(data.quickReplies);
+          }
+          if (data.phase === 'field_pick') setPhase('field_pick');
+          if (fieldContext?.kind === 'group' && fieldContext.appId) {
+            const again = await postChat({
+              action: `stage:group:${fieldContext.appId}:${fieldContext.stage}`,
+              message: `stage:group:${fieldContext.appId}:${fieldContext.stage}`,
+            });
+            if (again.quickReplies) setQuickReplies(again.quickReplies);
+            if (again.phase) setPhase(again.phase as Phase);
+            setFieldContext(null);
+          }
         }
       } catch {
         pushAssistant(
@@ -397,7 +503,7 @@ export const AssistiveChatbot: FC<{
       }
       setBusy(false);
     },
-    [busy, docType, startAuthFlow],
+    [busy, docType, fieldContext, startAuthFlow, postChat],
   );
 
   if (hide) return null;
@@ -450,7 +556,7 @@ export const AssistiveChatbot: FC<{
               </div>
             ) : null}
           </div>
-          {phase === 'apply_docs' || phase === 'group_list' ? (
+          {showUpload ? (
             <div className="flex items-center gap-2 border-t px-2 py-1.5">
               <input
                 ref={fileRef}
@@ -469,17 +575,17 @@ export const AssistiveChatbot: FC<{
                 variant="secondary"
                 className="text-xs"
                 disabled={busy}
-                onClick={() => {
-                  setPhase('apply_docs');
-                  fileRef.current?.click();
-                }}
+                onClick={() => fileRef.current?.click()}
               >
-                Attach{' '}
-                {docType === 'kra_pin'
-                  ? 'KRA'
-                  : docType === 'passport'
-                    ? 'passport'
-                    : 'ID'}
+                {phase === 'await_upload'
+                  ? `Attach ${fieldContext?.label || 'document'}`
+                  : `Attach ${
+                      docType === 'kra_pin'
+                        ? 'KRA'
+                        : docType === 'passport'
+                          ? 'passport'
+                          : 'ID'
+                    }`}
               </Button>
               <a href="/apply" className="text-xs text-sky-800 underline">
                 Open apply
@@ -512,7 +618,9 @@ export const AssistiveChatbot: FC<{
                     ? 'Email / username'
                     : phase === 'status_wait'
                       ? 'Application reference…'
-                      : 'Type a message…'
+                      : phase === 'await_field'
+                        ? `Enter ${fieldContext?.label || 'value'}…`
+                        : 'Type a message…'
               }
               type={passwordMode ? 'password' : 'text'}
               autoComplete={passwordMode ? 'current-password' : 'username'}
@@ -543,4 +651,3 @@ export const AssistiveChatbot: FC<{
     </div>
   );
 };
-

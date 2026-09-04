@@ -4,6 +4,9 @@ import {
   type DocDeclaredType,
 } from '@/lib/document-authenticity';
 import { getSessionUserId } from '@/lib/auth/session';
+import { uploadGroupDocument } from '@/lib/group-documents';
+import { type UploadCategory } from '@/lib/upload';
+import { getUserGroupApplications } from '@/lib/data/applications';
 import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -18,6 +21,16 @@ const TYPE_MAP: Record<string, DocDeclaredType> = {
   passport: 'passport',
 };
 
+const CATEGORY_TO_DECLARED: Record<string, DocDeclaredType> = {
+  'group-certificate': 'other',
+  'group-kra': 'kra_pin',
+  'group-bank-template': 'other',
+  'expression-of-interest': 'other',
+  'member-id': 'national_id',
+  'member-passport': 'passport',
+  'member-kra': 'kra_pin',
+};
+
 export async function POST(request: Request) {
   const userId = await getSessionUserId();
   if (!userId) {
@@ -30,11 +43,21 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const file = form.get('file');
   const declaredRaw = String(form.get('declaredType') || 'other').toLowerCase();
-  const declaredType: DocDeclaredType = TYPE_MAP[declaredRaw] || 'other';
+  const applicationId = String(form.get('applicationId') || '');
+  const category = String(form.get('category') || '') as UploadCategory;
+  const persist = String(form.get('persist') || '') === '1';
+  const memberId = form.get('memberId')
+    ? String(form.get('memberId'))
+    : undefined;
 
   if (!(file instanceof File)) {
     return NextResponse.json({ ok: false, error: 'Missing file' }, { status: 400 });
   }
+
+  const declaredType: DocDeclaredType =
+    TYPE_MAP[declaredRaw] ||
+    CATEGORY_TO_DECLARED[category] ||
+    'other';
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const result = await validateDocumentBuffer({
@@ -44,18 +67,49 @@ export async function POST(request: Request) {
     declaredType,
   });
 
-  // Intentionally do not persist file from chat unless clearly needed —
-  // guide user to apply wizard for official storage.
+  const authenticity = formatAuthenticityReply(result);
+
+  if (persist && applicationId && category) {
+    const owned = await getUserGroupApplications(userId);
+    if (!owned.some((g) => g.id === applicationId)) {
+      return NextResponse.json(
+        { ok: false, error: 'That application is not on your account.' },
+        { status: 403 },
+      );
+    }
+    try {
+      const saved = await uploadGroupDocument({
+        applicationId,
+        category,
+        file,
+        memberId,
+      });
+      return NextResponse.json({
+        ok: true,
+        result,
+        persisted: true,
+        document: saved,
+        reply: `${authenticity}\nSaved to application as ${category}.`,
+        nextHint: 'Pick another field or stage to continue editing in chat.',
+        phase: 'field_pick',
+      });
+    } catch (err) {
+      return NextResponse.json({
+        ok: false,
+        error:
+          err instanceof Error
+            ? err.message
+            : 'Could not save the document to the application.',
+        reply: authenticity,
+      }, { status: 400 });
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     result,
-    reply: formatAuthenticityReply(result),
+    reply: authenticity,
     nextHint:
-      'Continue the official upload on your apply Documents step so officers receive the file in the application record. ' +
-      (declaredType === 'national_id'
-        ? 'Open /apply (group documents or individual steps) and upload National ID there.'
-        : declaredType === 'kra_pin'
-          ? 'Upload KRA PIN on the Documents step of your application.'
-          : 'Upload passport on the Documents step of your application.'),
+      'Continue the official upload on your apply Documents step so officers receive the file in the application record, or select a document field in chat to save it to an application.',
   });
 }

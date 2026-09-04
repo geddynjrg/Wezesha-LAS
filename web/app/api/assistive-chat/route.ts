@@ -14,11 +14,20 @@ import {
 import {
   getGroupApplicationUrl,
   getGroupProgressLabel,
-  GROUP_STEPS,
 } from '@/lib/constants/majuu-steps';
 import { getSessionUserId } from '@/lib/auth/session';
+import {
+  beginFieldEdit,
+  groupFieldPicker,
+  groupStagePicker,
+  individualFieldPicker,
+  individualStagePicker,
+  saveGroupField,
+  saveIndividualField,
+} from '@/lib/assistive-chat-apply-flow';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+
 
 export const runtime = 'nodejs';
 
@@ -122,7 +131,7 @@ async function listApplicationsForUser(
   return {
     reply:
       mode === 'continue'
-        ? 'Tap an application to continue (opens the next incomplete stage):'
+        ? 'Tap an application to choose a stage and edit fields in chat:'
         : 'Tap an application to view its status (or continue a draft):',
     quickReplies,
   };
@@ -354,17 +363,32 @@ export async function POST(request: Request) {
   let path = '';
   let action = 'auto';
   let reference = '';
+  let fieldKind = '';
+  let fieldAppId = '';
+  let fieldStage = 0;
+  let fieldKey = '';
+  let fieldValue = '';
   try {
     const body = (await request.json()) as {
       message?: string;
       path?: string;
       action?: string;
       reference?: string;
+      kind?: string;
+      appId?: string;
+      stage?: number | string;
+      field?: string;
+      value?: string;
     };
     message = String(body.message || '');
     path = String(body.path || '');
     action = String(body.action || 'auto');
     reference = String(body.reference || message || '');
+    fieldKind = String(body.kind || '');
+    fieldAppId = String(body.appId || '');
+    fieldStage = Number(body.stage || 0);
+    fieldKey = String(body.field || '');
+    fieldValue = String(body.value || body.message || '');
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
@@ -497,31 +521,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ reply: 'Sign in first.', needAuth: true });
     }
     const id = (action.startsWith('continue:') ? action.slice(9) : continueMatch![1])!;
-    const groups = await getUserGroupApplications(userId);
-    const g = groups.find((row) => row.id === id);
-    if (!g) {
-      return NextResponse.json({
-        reply: 'That group application was not found on your account.',
-        quickReplies: MAIN_MENU_REPLIES,
-      });
-    }
-    const href = getGroupApplicationUrl(g.id, g.progress, g.status);
-    const stepHints = GROUP_STEPS.map(
-      (s) => `${s.index <= g.progress ? '✓' : '○'} ${s.index}. ${s.title}`,
-    ).join('\n');
+    const payload = await groupStagePicker(userId, id);
     return NextResponse.json({
-      reply:
-        `Opening ${groupDisplayName(g)} (${g.acknowledgmentNumber}).\n${getGroupProgressLabel(g.progress)}\n\n` +
-        `Stages:\n${stepHints}`,
-      openUrl: href,
-      navigate: true,
-      quickReplies: [
-        { id: 'open', label: 'Open next stage', value: `open:${href}` },
-        { id: 'docs', label: 'Check a document here', value: 'docs' },
-        { id: 'menu', label: 'Back to menu', value: 'menu' },
-      ],
+      ...payload,
       authenticated: true,
-      phase: 'apply_docs',
+      source: 'stage_pick',
     });
   }
 
@@ -535,18 +539,89 @@ export async function POST(request: Request) {
         ? action.slice('individual_continue:'.length)
         : indMatch![1]
     )!;
-    const href = `/apply/individual/${memberId}/dashboard`;
+    const payload = await individualStagePicker(userId, memberId);
     return NextResponse.json({
-      reply: `Opening your individual application…`,
-      openUrl: href,
-      navigate: true,
-      quickReplies: [
-        { id: 'open', label: 'Open individual apply', value: `open:${href}` },
-        { id: 'docs', label: 'Check a document here', value: 'docs' },
-        { id: 'menu', label: 'Back to menu', value: 'menu' },
-      ],
+      ...payload,
       authenticated: true,
-      phase: 'apply_docs',
+      source: 'stage_pick',
+    });
+  }
+
+  const stageMatch =
+    action.match(/^stage:(group|individual):([a-z0-9-]+):(\d+)$/i) ||
+    trimmed.match(/^stage:(group|individual):([a-z0-9-]+):(\d+)$/i);
+  if (stageMatch) {
+    if (!userId) {
+      return NextResponse.json({ reply: 'Sign in first.', needAuth: true });
+    }
+    const kind = stageMatch[1]!.toLowerCase() as 'group' | 'individual';
+    const appId = stageMatch[2]!;
+    const stage = Number(stageMatch[3]);
+    const payload =
+      kind === 'group'
+        ? await groupFieldPicker(userId, appId, stage)
+        : await individualFieldPicker(userId, appId, stage);
+    return NextResponse.json({
+      ...payload,
+      authenticated: true,
+      source: 'field_pick',
+    });
+  }
+
+  const fieldMatch =
+    action.match(/^field:(group|individual):([a-z0-9-]+):(\d+):([a-z0-9_-]+)$/i) ||
+    trimmed.match(/^field:(group|individual):([a-z0-9-]+):(\d+):([a-z0-9_-]+)$/i);
+  if (fieldMatch) {
+    if (!userId) {
+      return NextResponse.json({ reply: 'Sign in first.', needAuth: true });
+    }
+    const kind = fieldMatch[1]!.toLowerCase() as 'group' | 'individual';
+    const payload = await beginFieldEdit(
+      userId,
+      kind,
+      fieldMatch[2]!,
+      Number(fieldMatch[3]),
+      fieldMatch[4]!,
+    );
+    return NextResponse.json({
+      ...payload,
+      authenticated: true,
+      source: 'field_edit',
+    });
+  }
+
+  if (action === 'set_field') {
+    if (!userId) {
+      return NextResponse.json({ reply: 'Sign in first.', needAuth: true });
+    }
+    const kind = (fieldKind || 'group').toLowerCase() as 'group' | 'individual';
+    if (!fieldAppId || !fieldStage || !fieldKey) {
+      return NextResponse.json({
+        reply: 'Missing field context. Pick a stage and field again.',
+        quickReplies: MAIN_MENU_REPLIES,
+        authenticated: true,
+      });
+    }
+    const payload =
+      kind === 'group'
+        ? await saveGroupField(
+            userId,
+            fieldAppId,
+            fieldStage,
+            fieldKey,
+            fieldValue,
+          )
+        : await saveIndividualField(
+            userId,
+            fieldAppId,
+            fieldStage,
+            fieldKey,
+            fieldValue,
+          );
+    return NextResponse.json({
+      ...payload,
+      authenticated: true,
+      source: 'set_field',
     });
   }
 
