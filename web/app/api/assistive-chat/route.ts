@@ -22,10 +22,123 @@ import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 
-async function statusForUser(userId: string, reference: string): Promise<string> {
+function groupDisplayName(g: {
+  groupData?: { groupName?: string | null } | null;
+  acknowledgmentNumber: string;
+}): string {
+  return g.groupData?.groupName?.trim() || 'Group application';
+}
+
+function groupChipLabel(
+  g: {
+    id: string;
+    acknowledgmentNumber: string;
+    status: string;
+    progress: number;
+    groupData?: { groupName?: string | null } | null;
+  },
+  index?: number,
+): string {
+  const prefix = typeof index === 'number' ? `${index + 1}. ` : '';
+  const name = groupDisplayName(g);
+  const stage =
+    g.status === 'DRAFT' || g.progress < 9
+      ? getGroupProgressLabel(g.progress)
+      : plainMajuuStatus(g.status);
+  return `${prefix}${name} · ${g.acknowledgmentNumber} · ${stage}`;
+}
+
+type StatusResult = {
+  reply: string;
+  quickReplies?: ChatQuickReply[];
+  openUrl?: string;
+  phase?: string;
+};
+
+async function listApplicationsForUser(
+  userId: string,
+  mode: 'status' | 'continue' = 'status',
+): Promise<StatusResult> {
+  const [groups, memberships] = await Promise.all([
+    getUserGroupApplications(userId),
+    getUserIndividualMemberships(userId),
+  ]);
+
+  const quickReplies: ChatQuickReply[] = [];
+  let n = 0;
+
+  for (const g of groups.slice(0, 6)) {
+    const inProgress = g.status === 'DRAFT' || g.progress < 9;
+    const label = groupChipLabel(g, n);
+    n += 1;
+    if (mode === 'continue' || inProgress) {
+      quickReplies.push({
+        id: `grp-${g.id}`,
+        label,
+        value: `continue:${g.id}`,
+      });
+    } else {
+      quickReplies.push({
+        id: `st-g-${g.id}`,
+        label,
+        value: `status_ref:${g.acknowledgmentNumber}`,
+      });
+    }
+  }
+
+  for (const m of memberships.slice(0, 6)) {
+    const ind = m.individualApplication;
+    if (!ind?.acknowledgmentNumber) continue;
+    const groupName =
+      m.application?.groupData?.groupName?.trim() || 'Individual';
+    const label = `${n + 1}. ${groupName} · ${ind.acknowledgmentNumber} · ${plainMajuuStatus(ind.status)}`;
+    n += 1;
+    const inProgress = ind.status === 'DRAFT' || (ind.progress || 1) < 9;
+    if (mode === 'continue' || inProgress) {
+      quickReplies.push({
+        id: `ind-${m.id}`,
+        label,
+        value: `individual_continue:${m.id}`,
+      });
+    } else {
+      quickReplies.push({
+        id: `st-i-${m.id}`,
+        label,
+        value: `status_ref:${ind.acknowledgmentNumber}`,
+      });
+    }
+  }
+
+  if (!quickReplies.length) {
+    return {
+      reply:
+        'No applications found on your account yet. Choose Apply for a loan to start.',
+      quickReplies: MAIN_MENU_REPLIES,
+    };
+  }
+
+  quickReplies.push({ id: 'menu', label: 'Back to menu', value: 'menu' });
+
+  return {
+    reply:
+      mode === 'continue'
+        ? 'Tap an application to continue (opens the next incomplete stage):'
+        : 'Tap an application to view its status (or continue a draft):',
+    quickReplies,
+  };
+}
+
+async function statusForUser(
+  userId: string,
+  reference: string,
+): Promise<StatusResult> {
   const ref = reference.trim();
   if (!ref) {
-    return 'Please send an acknowledgment / reference number.';
+    return { reply: 'Please send an acknowledgment / reference number.' };
+  }
+
+  if (/^(list|all|mine)$/i.test(ref)) {
+    return listApplicationsForUser(userId, 'status');
   }
 
   const [groups, memberships] = await Promise.all([
@@ -40,10 +153,37 @@ async function statusForUser(userId: string, reference: string): Promise<string>
     (g) => g.acknowledgmentNumber.toLowerCase() === ref.toLowerCase(),
   );
   if (groupHit) {
-    return (
-      `Group application ${groupHit.acknowledgmentNumber}: ${plainMajuuStatus(groupHit.status)}. ` +
-      `${getGroupProgressLabel(groupHit.progress)}. Open /dashboard for details.`
+    const inProgress = groupHit.status === 'DRAFT' || groupHit.progress < 9;
+    const href = getGroupApplicationUrl(
+      groupHit.id,
+      groupHit.progress,
+      groupHit.status,
     );
+    const reply =
+      `Group ${groupDisplayName(groupHit)} (${groupHit.acknowledgmentNumber}): ${plainMajuuStatus(groupHit.status)}. ` +
+      `${getGroupProgressLabel(groupHit.progress)}.`;
+    return {
+      reply,
+      openUrl: inProgress ? href : `/dashboard`,
+      quickReplies: [
+        ...(inProgress
+          ? [
+              {
+                id: 'cont',
+                label: 'Continue this application',
+                value: `continue:${groupHit.id}`,
+              },
+            ]
+          : [
+              {
+                id: 'dash',
+                label: 'Open dashboard',
+                value: 'open:/dashboard',
+              },
+            ]),
+        { id: 'menu', label: 'Back to menu', value: 'menu' },
+      ],
+    };
   }
 
   for (const m of memberships) {
@@ -51,16 +191,29 @@ async function statusForUser(userId: string, reference: string): Promise<string>
     const ack = ind?.acknowledgmentNumber;
     if (ack && ack.toLowerCase() === ref.toLowerCase()) {
       if (!ownedGroupIds.has(m.applicationId) && !ind) continue;
-      return (
-        `Individual application ${ack}: ${plainMajuuStatus(ind?.status)}. ` +
-        `Open /apply/individual/${m.id}/dashboard for the latest stage.`
-      );
+      const href = `/apply/individual/${m.id}/dashboard`;
+      return {
+        reply:
+          `Individual application ${ack}: ${plainMajuuStatus(ind?.status)}. ` +
+          `Open the individual apply path to continue or review.`,
+        openUrl: href,
+        quickReplies: [
+          {
+            id: 'cont',
+            label: 'Open this application',
+            value: `individual_continue:${m.id}`,
+          },
+          { id: 'menu', label: 'Back to menu', value: 'menu' },
+        ],
+      };
     }
   }
 
   const anyGroup = await getGroupApplicationByAck(ref);
   if (anyGroup && !ownedAcks.has(anyGroup.acknowledgmentNumber)) {
-    return 'No application with that reference was found on your account.';
+    return {
+      reply: 'No application with that reference was found on your account.',
+    };
   }
 
   const anyInd = await prisma.individualApplication.findFirst({
@@ -70,31 +223,20 @@ async function statusForUser(userId: string, reference: string): Promise<string>
   if (anyInd) {
     const allowed = memberships.some((m) => m.id === anyInd.memberId);
     if (!allowed) {
-      return 'No application with that reference was found on your account.';
+      return {
+        reply: 'No application with that reference was found on your account.',
+      };
     }
   }
 
-  if (/^(list|all|mine)$/i.test(ref)) {
-    const lines: string[] = [];
-    for (const g of groups.slice(0, 5)) {
-      lines.push(
-        `• Group ${g.acknowledgmentNumber}: ${plainMajuuStatus(g.status)} (${getGroupProgressLabel(g.progress)})`,
-      );
-    }
-    for (const m of memberships.slice(0, 5)) {
-      const ind = m.individualApplication;
-      if (ind?.acknowledgmentNumber) {
-        lines.push(
-          `• Individual ${ind.acknowledgmentNumber}: ${plainMajuuStatus(ind.status)}`,
-        );
-      }
-    }
-    return lines.length
-      ? `Your applications:\n${lines.join('\n')}`
-      : 'No applications found on your account yet. Choose Apply for a loan to start.';
-  }
-
-  return 'No application with that reference was found on your account. Send “list” to see yours, or check /dashboard.';
+  return {
+    reply:
+      'No application with that reference was found on your account. Tap List to see yours, or check /dashboard.',
+    quickReplies: [
+      { id: 'list', label: 'List my applications', value: 'list' },
+      { id: 'menu', label: 'Back to menu', value: 'menu' },
+    ],
+  };
 }
 
 async function groupApplyPayload(userId: string): Promise<{
@@ -112,11 +254,11 @@ async function groupApplyPayload(userId: string): Promise<{
 
   if (inProgress.length) {
     lines.push(
-      'You already have in-progress group application(s). Continue one of these instead of starting a new file:',
+      'You already have in-progress group application(s). Tap a button to continue — do not start a new file unless needed:',
     );
     inProgress.slice(0, 6).forEach((g, i) => {
       const href = getGroupApplicationUrl(g.id, g.progress, g.status);
-      const label = `${i + 1}. ${g.acknowledgmentNumber} — ${getGroupProgressLabel(g.progress)}`;
+      const label = groupChipLabel(g, i);
       lines.push(`• ${label}`);
       quickReplies.push({
         id: `grp-${g.id}`,
@@ -126,7 +268,7 @@ async function groupApplyPayload(userId: string): Promise<{
       links.push({ label: g.acknowledgmentNumber, href });
     });
     lines.push(
-      '\nTap a button to open the next incomplete stage. Soft-duplicate and field guidance run on the apply forms; document authenticity checks are available after you choose Attach.',
+      '\nEach button opens the next incomplete stage for that application.',
     );
     quickReplies.push({
       id: 'new-group',
@@ -167,10 +309,12 @@ async function individualApplyPayload(userId: string): Promise<{
 
   const withInd = memberships.filter((m) => m.individualApplication);
   if (withInd.length) {
-    lines.push('Continue an existing individual application:');
+    lines.push('Tap an individual application to continue:');
     withInd.slice(0, 6).forEach((m, i) => {
       const ind = m.individualApplication!;
-      const label = `${i + 1}. ${ind.acknowledgmentNumber || m.idNo} (step ${ind.progress || 1})`;
+      const groupName =
+        m.application?.groupData?.groupName?.trim() || 'Individual';
+      const label = `${i + 1}. ${groupName} · ${ind.acknowledgmentNumber || m.idNo} · step ${ind.progress || 1}`;
       lines.push(`• ${label}`);
       quickReplies.push({
         id: `ind-${m.id}`,
@@ -180,12 +324,14 @@ async function individualApplyPayload(userId: string): Promise<{
     });
   } else if (memberships.length) {
     lines.push(
-      'You are listed on a group but have not started an individual file. Open your membership dashboard to continue.',
+      'You are listed on a group but have not started an individual file. Tap a membership to open it:',
     );
-    memberships.slice(0, 4).forEach((m) => {
+    memberships.slice(0, 4).forEach((m, i) => {
+      const groupName =
+        m.application?.groupData?.groupName?.trim() || 'Group';
       quickReplies.push({
         id: `mem-${m.id}`,
-        label: `Open member ${m.idNo}`,
+        label: `${i + 1}. ${groupName} · member ${m.idNo}`,
         value: `individual_continue:${m.id}`,
       });
     });
@@ -274,12 +420,14 @@ export async function POST(request: Request) {
         authenticated: true,
       });
     }
-    const reply = await statusForUser(userId, ref);
+    const result = await statusForUser(userId, ref);
     return NextResponse.json({
-      reply,
+      ...result,
       source: 'status',
       authenticated: true,
-      quickReplies: MAIN_MENU_REPLIES,
+      quickReplies: result.quickReplies?.length
+        ? result.quickReplies
+        : MAIN_MENU_REPLIES,
     });
   }
 
@@ -363,10 +511,10 @@ export async function POST(request: Request) {
     ).join('\n');
     return NextResponse.json({
       reply:
-        `Continue ${g.acknowledgmentNumber}.\n${getGroupProgressLabel(g.progress)}\n\n` +
-        `Stages:\n${stepHints}\n\n` +
-        'Open the link to edit the next incomplete stage. Forms use soft-duplicate, field guidance, and document checks — officers still confirm authenticity.',
+        `Opening ${groupDisplayName(g)} (${g.acknowledgmentNumber}).\n${getGroupProgressLabel(g.progress)}\n\n` +
+        `Stages:\n${stepHints}`,
       openUrl: href,
+      navigate: true,
       quickReplies: [
         { id: 'open', label: 'Open next stage', value: `open:${href}` },
         { id: 'docs', label: 'Check a document here', value: 'docs' },
@@ -389,8 +537,9 @@ export async function POST(request: Request) {
     )!;
     const href = `/apply/individual/${memberId}/dashboard`;
     return NextResponse.json({
-      reply: `Continue your individual application at ${href}. Complete remaining steps; use Attach here for assistive ID/KRA checks.`,
+      reply: `Opening your individual application…`,
       openUrl: href,
+      navigate: true,
       quickReplies: [
         { id: 'open', label: 'Open individual apply', value: `open:${href}` },
         { id: 'docs', label: 'Check a document here', value: 'docs' },
@@ -398,6 +547,29 @@ export async function POST(request: Request) {
       ],
       authenticated: true,
       phase: 'apply_docs',
+    });
+  }
+
+  if (
+    action.startsWith('status_ref:') ||
+    /^status_ref:/i.test(trimmed)
+  ) {
+    if (!userId) {
+      return NextResponse.json({ reply: 'Sign in first.', needAuth: true });
+    }
+    const ref = (
+      action.startsWith('status_ref:')
+        ? action.slice('status_ref:'.length)
+        : trimmed.slice('status_ref:'.length)
+    ).trim();
+    const result = await statusForUser(userId, ref);
+    return NextResponse.json({
+      ...result,
+      source: 'status',
+      authenticated: true,
+      quickReplies: result.quickReplies?.length
+        ? result.quickReplies
+        : MAIN_MENU_REPLIES,
     });
   }
 
@@ -436,12 +608,14 @@ export async function POST(request: Request) {
   }
 
   if (userId && (/^UWZ-[\w-]+$/i.test(trimmed) || /^list$/i.test(trimmed))) {
-    const reply = await statusForUser(userId, trimmed);
+    const result = await statusForUser(userId, trimmed);
     return NextResponse.json({
-      reply,
+      ...result,
       source: 'status',
       authenticated: true,
-      quickReplies: MAIN_MENU_REPLIES,
+      quickReplies: result.quickReplies?.length
+        ? result.quickReplies
+        : MAIN_MENU_REPLIES,
     });
   }
 

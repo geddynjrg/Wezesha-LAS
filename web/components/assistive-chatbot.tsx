@@ -155,6 +155,7 @@ export const AssistiveChatbot: FC<{
       quickReplies?: ChatQuickReply[];
       phase?: string;
       openUrl?: string;
+      navigate?: boolean;
     }) => {
       if (data.needAuth) {
         startAuthFlow();
@@ -167,8 +168,15 @@ export const AssistiveChatbot: FC<{
       if (data.phase === 'individual') setPhase('apply_choice');
       if (Array.isArray(data.quickReplies)) setQuickReplies(data.quickReplies);
       pushAssistant(setMessages, data.reply || 'OK');
-      if (data.openUrl && typeof window !== 'undefined') {
-        // Deep-link offered via quick reply; do not force navigation.
+      if (
+        data.navigate &&
+        data.openUrl &&
+        data.openUrl.startsWith('/') &&
+        typeof window !== 'undefined'
+      ) {
+        window.setTimeout(() => {
+          window.location.href = data.openUrl!;
+        }, 400);
       }
     },
     [startAuthFlow],
@@ -181,14 +189,15 @@ export const AssistiveChatbot: FC<{
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, path: pathname }),
       });
-      return (await res.json()) as {
-        reply?: string;
-        needAuth?: boolean;
-        expectReference?: boolean;
-        quickReplies?: ChatQuickReply[];
-        phase?: string;
-        openUrl?: string;
-      };
+        return (await res.json()) as {
+          reply?: string;
+          needAuth?: boolean;
+          expectReference?: boolean;
+          quickReplies?: ChatQuickReply[];
+          phase?: string;
+          openUrl?: string;
+          navigate?: boolean;
+        };
     },
     [pathname],
   );
@@ -319,6 +328,7 @@ export const AssistiveChatbot: FC<{
         else if (/^docs$/i.test(trimmed)) action = 'docs';
         else if (/^continue:/i.test(trimmed)) action = trimmed;
         else if (/^individual_continue:/i.test(trimmed)) action = trimmed;
+        else if (/^status_ref:/i.test(trimmed)) action = trimmed;
         else if (/^list$/i.test(trimmed)) action = 'status';
 
         const data = await postChat({
