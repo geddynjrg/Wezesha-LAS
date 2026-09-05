@@ -46,6 +46,8 @@ export async function POST(request: Request) {
   const applicationId = String(form.get('applicationId') || '');
   const category = String(form.get('category') || '') as UploadCategory;
   const persist = String(form.get('persist') || '') === '1';
+  const ocrPassed = String(form.get('ocrPassed') || '') === '1';
+  const ocrConfidence = Number(form.get('ocrConfidence') || 0);
   const memberId = form.get('memberId')
     ? String(form.get('memberId'))
     : undefined;
@@ -58,6 +60,29 @@ export async function POST(request: Request) {
     TYPE_MAP[declaredRaw] ||
     CATEGORY_TO_DECLARED[category] ||
     'other';
+
+  const isImage = (file.type || '').startsWith('image/');
+  const needsOcrGate =
+    isImage &&
+    (declaredType === 'national_id' ||
+      declaredType === 'kra_pin' ||
+      declaredType === 'passport' ||
+      category === 'member-id' ||
+      category === 'member-passport' ||
+      category === 'member-kra' ||
+      category === 'group-kra');
+
+  // Gate image uploads for known ID/doc types behind client OCR pass.
+  if (needsOcrGate && (!ocrPassed || ocrConfidence < 0.5)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          'Capture rejected: scan the document in chat until OCR confidence is high enough, then Capture.',
+      },
+      { status: 400 },
+    );
+  }
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const result = await validateDocumentBuffer({
