@@ -62,23 +62,32 @@ export async function POST(request: Request) {
     'other';
 
   const isImage = (file.type || '').startsWith('image/');
+  // Gate all known field categories / declared ID docs (not Kenyan-ID-only).
+  const gatedCategories = new Set([
+    'member-id',
+    'member-passport',
+    'member-kra',
+    'group-kra',
+    'group-certificate',
+    'group-bank-template',
+    'expression-of-interest',
+    'individual-document',
+  ]);
   const needsOcrGate =
     isImage &&
     (declaredType === 'national_id' ||
       declaredType === 'kra_pin' ||
       declaredType === 'passport' ||
-      category === 'member-id' ||
-      category === 'member-passport' ||
-      category === 'member-kra' ||
-      category === 'group-kra');
+      gatedCategories.has(category) ||
+      Boolean(category));
 
-  // Gate image uploads for known ID/doc types behind client OCR pass.
+  // Client OCR must pass for the field’s expected document (≥0.5; mismatches are ~0.2).
   if (needsOcrGate && (!ocrPassed || ocrConfidence < 0.5)) {
     return NextResponse.json(
       {
         ok: false,
         error:
-          'Capture rejected: scan the document in chat until OCR confidence is high enough, then Capture.',
+          'Capture rejected: scan the document required for this field until OCR confidence is high enough, then Capture. Wrong document types stay locked (~20%).',
       },
       { status: 400 },
     );

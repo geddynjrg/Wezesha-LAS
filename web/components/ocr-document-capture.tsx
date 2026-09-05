@@ -2,12 +2,14 @@
 
 import {
   OCR_CAPTURE_THRESHOLD,
+  expectedDocLabel,
+  resolveOcrDocType,
   runClientOcr,
   type OcrDocType,
   type OcrScoreResult,
 } from '@/lib/kenyan-id-ocr';
 import { Button } from '@workspace/ui/components/button';
-import { useCallback, useEffect, useRef, useState, type FC } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FC } from 'react';
 
 export type OcrCaptureResult = {
   file: File;
@@ -15,7 +17,8 @@ export type OcrCaptureResult = {
 };
 
 type Props = {
-  declaredType: OcrDocType;
+  /** Field key, upload category, or declared type — resolved to expected doc. */
+  declaredType: OcrDocType | string;
   label?: string;
   onCaptured: (result: OcrCaptureResult) => void;
   onCancel?: () => void;
@@ -23,14 +26,19 @@ type Props = {
 
 /**
  * Camera / file preview with OCR overlay. Capture stays disabled until
- * Kenyan-document confidence passes the threshold.
+ * confidence is high for the *expected* document type for this field.
  */
 export const OcrDocumentCapture: FC<Props> = ({
   declaredType,
-  label = 'document',
+  label,
   onCaptured,
   onCancel,
 }) => {
+  const expectedType = useMemo(
+    () => resolveOcrDocType(String(declaredType)),
+    [declaredType],
+  );
+  const expectedLabel = label || expectedDocLabel(expectedType);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -67,7 +75,7 @@ export const OcrDocumentCapture: FC<Props> = ({
           await videoRef.current.play().catch(() => undefined);
         }
       } catch {
-        // Camera optional — file picker still works
+        /* camera optional */
       }
     })();
     return () => {
@@ -92,7 +100,11 @@ export const OcrDocumentCapture: FC<Props> = ({
     ctx.font = '12px monospace';
     ctx.fillStyle = pass ? '#ecfdf5' : '#fef3c7';
     lines.slice(0, 10).forEach((line, i) => {
-      ctx.fillText(line.slice(0, 48), 8, h - Math.min(h * 0.45, 18 + lines.length * 14) + 14 + i * 13);
+      ctx.fillText(
+        line.slice(0, 48),
+        8,
+        h - Math.min(h * 0.45, 18 + lines.length * 14) + 14 + i * 13,
+      );
     });
   }, []);
 
@@ -113,7 +125,7 @@ export const OcrDocumentCapture: FC<Props> = ({
       setScanning(true);
       setError(null);
       try {
-        const result = await runClientOcr(source, declaredType);
+        const result = await runClientOcr(source, expectedType);
         setScore(result);
         drawOverlay(result.overlayLines, result.pass);
         if (!result.pass) {
@@ -130,7 +142,7 @@ export const OcrDocumentCapture: FC<Props> = ({
         setScanning(false);
       }
     },
-    [declaredType, drawOverlay],
+    [expectedType, drawOverlay],
   );
 
   const onScanCamera = useCallback(async () => {
@@ -161,7 +173,7 @@ export const OcrDocumentCapture: FC<Props> = ({
           frame.toBlob(resolve, 'image/jpeg', 0.92),
         );
         if (blob) {
-          file = new File([blob], `${declaredType}-${Date.now()}.jpg`, {
+          file = new File([blob], `${expectedType}-${Date.now()}.jpg`, {
             type: 'image/jpeg',
           });
         }
@@ -173,8 +185,7 @@ export const OcrDocumentCapture: FC<Props> = ({
         setError('Nothing to capture. Scan a frame or choose a photo first.');
         return;
       }
-      // Re-validate final file
-      const finalScore = await runClientOcr(file, declaredType);
+      const finalScore = await runClientOcr(file, expectedType);
       if (!finalScore.pass) {
         setScore(finalScore);
         setError(finalScore.rejectReason || 'Capture rejected.');
@@ -185,7 +196,7 @@ export const OcrDocumentCapture: FC<Props> = ({
     } finally {
       setScanning(false);
     }
-  }, [score, grabFrameToCanvas, declaredType, onCaptured, stopCamera]);
+  }, [score, grabFrameToCanvas, expectedType, onCaptured, stopCamera]);
 
   const canCapture = Boolean(score?.pass) && !scanning;
   const pct = score ? Math.round(score.confidence * 100) : 0;
@@ -193,8 +204,8 @@ export const OcrDocumentCapture: FC<Props> = ({
   return (
     <div className="space-y-2 rounded-md border border-sky-200 bg-sky-50/80 p-2 text-xs">
       <p className="font-medium text-sky-950">
-        Scan {label} — Capture unlocks at ≥{Math.round(OCR_CAPTURE_THRESHOLD * 100)}%
-        confidence
+        Expected: {expectedLabel} — Capture unlocks at ≥
+        {Math.round(OCR_CAPTURE_THRESHOLD * 100)}% for this document type
       </p>
       <div className="relative overflow-hidden rounded bg-black">
         {previewUrl && !streamRef.current ? (
@@ -270,10 +281,12 @@ export const OcrDocumentCapture: FC<Props> = ({
       {score ? (
         <p className={score.pass ? 'text-emerald-800' : 'text-amber-800'}>
           Confidence {pct}%
+          {score.detectedType && score.detectedType !== 'unknown'
+            ? ` · detected: ${expectedDocLabel(score.detectedType as OcrDocType)}`
+            : ''}
           {score.matchedKeywords.length
             ? ` · matched: ${score.matchedKeywords.slice(0, 3).join(', ')}`
             : ''}
-          {score.idCandidates[0] ? ` · ID-like: ${score.idCandidates[0]}` : ''}
         </p>
       ) : null}
       {error ? <p className="text-red-700">{error}</p> : null}
