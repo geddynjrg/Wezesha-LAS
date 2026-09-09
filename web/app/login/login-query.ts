@@ -9,7 +9,7 @@ export function buildLoginHref(opts: {
   type?: string | null;
 }): string {
   const params = new URLSearchParams();
-  if (opts.type === 'email' || opts.type === 'phone' || opts.type === 'ecitizen') {
+  if (opts.type === 'email' || opts.type === 'phone' || opts.type === 'ecitizen' || opts.type === 'qr') {
     params.set('type', opts.type);
   }
   if (opts.role) {

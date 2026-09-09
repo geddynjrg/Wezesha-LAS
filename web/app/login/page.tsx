@@ -7,6 +7,7 @@ import {
 import { buildLoginHref } from '@/app/login/login-query';
 import { LoginRolePicker } from '@/app/login/login-role-picker';
 import { PhoneLoginForm } from '@/app/login/phone-login-form';
+import { QrLoginPanel } from '@/components/qr-login-panel';
 import { getSessionUserId } from '@/lib/auth/session';
 import {
   resolveApplicantLoginRole,
@@ -35,7 +36,9 @@ export default async function LoginPage({
       ? 'email'
       : params.type === 'phone'
         ? 'phone'
-        : 'ecitizen';
+        : params.type === 'qr'
+          ? 'qr'
+          : 'ecitizen';
   const callbackUrl = params.callbackUrl;
   const loginSuccessPath = resolveLoginSuccessPath(callbackUrl);
   const selectedRole = resolveApplicantLoginRole(params.role, callbackUrl);
@@ -145,6 +148,19 @@ export default async function LoginPage({
                         Use Phone
                       </Underline>
                     </Link>
+                    <span className="text-gray-400">|</span>
+                    <Link
+                      href={buildLoginHref({
+                        role: selectedRole,
+                        callbackUrl,
+                        type: 'qr',
+                      })}
+                      className="text-primary"
+                    >
+                      <Underline variant="primary" className="text-primary">
+                        Use App QR
+                      </Underline>
+                    </Link>
                   </div>
                 </nav>
               </div>
@@ -242,6 +258,73 @@ export default async function LoginPage({
                     >
                       <Underline variant="primary" className="text-primary">
                         Use Email
+                      </Underline>
+                    </Link>
+                    <span className="text-gray-400">|</span>
+                    <Link
+                      href={buildLoginHref({
+                        role: selectedRole,
+                        callbackUrl,
+                        type: 'qr',
+                      })}
+                      className="text-primary"
+                    >
+                      <Underline variant="primary" className="text-primary">
+                        Use App QR
+                      </Underline>
+                    </Link>
+                  </div>
+                </nav>
+              </div>
+            )}
+
+            {loginType === 'qr' && (
+              <div className="space-y-4">
+                <QrLoginPanel redirectTo={loginSuccessPath} source="web" />
+
+                <Divider className="my-6">{t('or')}</Divider>
+
+                <nav
+                  aria-label="Authentication options"
+                  className="flex flex-col items-center gap-3"
+                >
+                  <div className="flex justify-center gap-4 flex-wrap">
+                    <Link
+                      href={buildLoginHref({
+                        role: selectedRole,
+                        callbackUrl,
+                        type: 'ecitizen',
+                      })}
+                      className="text-primary"
+                    >
+                      <Underline variant="primary" className="text-primary">
+                        Use eCitizen
+                      </Underline>
+                    </Link>
+                    <span className="text-gray-400">|</span>
+                    <Link
+                      href={buildLoginHref({
+                        role: selectedRole,
+                        callbackUrl,
+                        type: 'email',
+                      })}
+                      className="text-primary"
+                    >
+                      <Underline variant="primary" className="text-primary">
+                        Use Email
+                      </Underline>
+                    </Link>
+                    <span className="text-gray-400">|</span>
+                    <Link
+                      href={buildLoginHref({
+                        role: selectedRole,
+                        callbackUrl,
+                        type: 'phone',
+                      })}
+                      className="text-primary"
+                    >
+                      <Underline variant="primary" className="text-primary">
+                        Use Phone
                       </Underline>
                     </Link>
                   </div>

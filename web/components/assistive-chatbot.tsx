@@ -4,6 +4,7 @@ import {
   OcrDocumentCapture,
   type OcrCaptureResult,
 } from '@/components/ocr-document-capture';
+import { QrLoginPanel } from '@/components/qr-login-panel';
 import { answerAssistiveChat, type ChatMessage } from '@/lib/assistive-chatbot-faq';
 import {
   MAIN_MENU_REPLIES,
@@ -37,6 +38,7 @@ type Phase =
   | 'await_phone'
   | 'await_otp_email'
   | 'await_otp'
+  | 'await_qr'
   | 'menu'
   | 'apply_choice'
   | 'group_list'
@@ -62,6 +64,7 @@ const AUTH_METHOD_REPLIES: ChatQuickReply[] = [
   { id: 'auth-email', label: 'Email / password', value: 'auth:email' },
   { id: 'auth-phone', label: 'Mobile phone (OTP)', value: 'auth:phone' },
   { id: 'auth-ecitizen', label: 'eCitizen', value: 'auth:ecitizen' },
+  { id: 'auth-qr', label: 'App QR login', value: 'auth:qr' },
 ];
 
 const WHATSAPP_ENV =
@@ -344,6 +347,22 @@ export const AssistiveChatbot: FC<{
             setBusy(false);
             return;
           }
+          if (trimmed === 'auth:qr') {
+            setPhase('await_qr');
+            setQuickReplies([
+              {
+                id: 'back-auth',
+                label: 'Back to sign-in options',
+                value: 'auth:back',
+              },
+            ]);
+            pushAssistant(
+              setMessages,
+              'Scan this QR with the Uwezo Fund app. Verify phone OTP or email in the app, then confirm — this chat will sign you in.',
+            );
+            setBusy(false);
+            return;
+          }
           if (trimmed === 'auth:ecitizen') {
             const result = await loginWithMethod({
               method: 'ecitizen',
@@ -371,7 +390,7 @@ export const AssistiveChatbot: FC<{
           if (phase === 'await_auth_method') {
             pushAssistant(
               setMessages,
-              'Choose Email / password, Mobile phone (OTP), or eCitizen.',
+              'Choose Email / password, Mobile phone (OTP), App QR, or eCitizen.',
             );
             setQuickReplies(AUTH_METHOD_REPLIES);
             setBusy(false);
@@ -831,6 +850,15 @@ export const AssistiveChatbot: FC<{
                 {m.content}
               </div>
             ))}
+            {phase === 'await_qr' ? (
+              <div className="mr-2 pt-1">
+                <QrLoginPanel
+                  source="chat"
+                  redirectTo={pathname || '/'}
+                  onReady={() => showSignedInMenu()}
+                />
+              </div>
+            ) : null}
             {quickReplies.length > 0 && !sensitiveMode ? (
               <div className="mr-2 flex flex-wrap gap-1.5 pt-1">
                 {quickReplies.map((qr) => (
