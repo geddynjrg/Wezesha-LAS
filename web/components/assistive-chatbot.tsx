@@ -54,6 +54,7 @@ type FieldContext = {
   field: string;
   label: string;
   uploadCategory?: string;
+  memberId?: string;
 };
 
 const AUTH_METHOD_REPLIES: ChatQuickReply[] = [
@@ -457,7 +458,8 @@ export const AssistiveChatbot: FC<{
             trimmed.startsWith('stage:') ||
             trimmed.startsWith('continue:') ||
             trimmed.startsWith('individual_continue:') ||
-            trimmed.startsWith('field:')
+            trimmed.startsWith('field:') ||
+            trimmed.startsWith('member:')
           ) {
             const data = await postChat({ action: trimmed, message: trimmed });
             applyServerPayload(data);
@@ -472,6 +474,9 @@ export const AssistiveChatbot: FC<{
             appId: fieldContext.appId,
             stage: fieldContext.stage,
             field: fieldContext.field,
+            ...(fieldContext.memberId
+              ? { memberId: fieldContext.memberId }
+              : {}),
           });
           applyServerPayload(data);
           setBusy(false);
@@ -517,6 +522,7 @@ export const AssistiveChatbot: FC<{
             trimmed.startsWith('continue:') ||
             trimmed.startsWith('stage:') ||
             trimmed.startsWith('field:') ||
+            trimmed.startsWith('member:') ||
             trimmed.startsWith('individual_continue:') ||
             trimmed.startsWith('status_ref:')
           ) {
@@ -588,6 +594,7 @@ export const AssistiveChatbot: FC<{
         else if (/^status_ref:/i.test(trimmed)) action = trimmed;
         else if (/^stage:/i.test(trimmed)) action = trimmed;
         else if (/^field:/i.test(trimmed)) action = trimmed;
+        else if (/^member:/i.test(trimmed)) action = trimmed;
         else if (/^list$/i.test(trimmed)) action = 'status';
 
         const data = await postChat({

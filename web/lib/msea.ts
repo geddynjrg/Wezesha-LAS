@@ -134,6 +134,9 @@ export async function checkMseaReachable(): Promise<boolean> {
 export async function lookupMseaBusiness(registrationNumber: string): Promise<{
   partners: MseaPartner[];
   totalMembers: number;
+  business_name?: string;
+  registration_number?: string;
+  registration_date?: string;
 } | null> {
   if (!isMseaApiEnabled()) {
     return null;
@@ -182,6 +185,9 @@ export async function lookupMseaBusiness(registrationNumber: string): Promise<{
     return {
       partners,
       totalMembers: partners.length,
+      business_name: record.business_name,
+      registration_number: record.registration_number || trimmed,
+      registration_date: record.registration_date,
     };
   } catch {
     return null;

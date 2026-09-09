@@ -25,6 +25,11 @@ export const MAIN_MENU_REPLIES: ChatQuickReply[] = [
     label: '2. Check status of loan application',
     value: 'status',
   },
+  {
+    id: 'new_app',
+    label: '3. New application',
+    value: 'new_group',
+  },
 ];
 
 export const APPLY_TYPE_REPLIES: ChatQuickReply[] = [

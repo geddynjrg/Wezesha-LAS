@@ -20,6 +20,7 @@ import {
   beginFieldEdit,
   groupFieldPicker,
   groupStagePicker,
+  handleMemberAction,
   individualFieldPicker,
   individualStagePicker,
   saveGroupField,
@@ -368,6 +369,7 @@ export async function POST(request: Request) {
   let fieldStage = 0;
   let fieldKey = '';
   let fieldValue = '';
+  let fieldMemberId = '';
   try {
     const body = (await request.json()) as {
       message?: string;
@@ -379,6 +381,7 @@ export async function POST(request: Request) {
       stage?: number | string;
       field?: string;
       value?: string;
+      memberId?: string;
     };
     message = String(body.message || '');
     path = String(body.path || '');
@@ -389,6 +392,7 @@ export async function POST(request: Request) {
     fieldStage = Number(body.stage || 0);
     fieldKey = String(body.field || '');
     fieldValue = String(body.value || body.message || '');
+    fieldMemberId = String(body.memberId || '');
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
@@ -501,6 +505,29 @@ export async function POST(request: Request) {
   }
 
   if (action === 'new_group' || /^new_group$/i.test(trimmed)) {
+    if (!userId) {
+      return NextResponse.json({ reply: 'Sign in first.', needAuth: true });
+    }
+    try {
+      const apps = await import('@/lib/data/applications');
+      const createFn = (
+        apps as {
+          createGroupApplication?: (uid: string) => Promise<{ id: string }>;
+        }
+      ).createGroupApplication;
+      if (typeof createFn === 'function') {
+        const created = await createFn(userId);
+        const payload = await groupStagePicker(userId, created.id);
+        return NextResponse.json({
+          ...payload,
+          reply: `New group application created.\n\n${payload.reply}`,
+          authenticated: true,
+          source: 'new_group',
+        });
+      }
+    } catch {
+      /* fall through to form */
+    }
     return NextResponse.json({
       reply:
         'Starting a new group is only needed when you have no usable draft. Open /apply/create to begin. Soft-duplicate checks will warn if the group already exists.',
@@ -510,8 +537,23 @@ export async function POST(request: Request) {
         { id: 'group', label: 'Back to group list', value: 'group' },
         { id: 'menu', label: 'Back to menu', value: 'menu' },
       ],
-      authenticated: Boolean(userId),
-      needAuth: !userId,
+      authenticated: true,
+    });
+  }
+
+  const memberAction =
+    action.match(/^member:(add|edit|done):group:.+/i) ||
+    trimmed.match(/^member:(add|edit|done):group:.+/i);
+  if (memberAction) {
+    if (!userId) {
+      return NextResponse.json({ reply: 'Sign in first.', needAuth: true });
+    }
+    const token = memberAction[0]!;
+    const payload = await handleMemberAction(userId, token);
+    return NextResponse.json({
+      ...payload,
+      authenticated: true,
+      source: 'member',
     });
   }
 
@@ -569,8 +611,8 @@ export async function POST(request: Request) {
   }
 
   const fieldMatch =
-    action.match(/^field:(group|individual):([a-z0-9-]+):(\d+):([a-z0-9_-]+)$/i) ||
-    trimmed.match(/^field:(group|individual):([a-z0-9-]+):(\d+):([a-z0-9_-]+)$/i);
+    action.match(/^field:(group|individual):([a-z0-9-]+):(\d+):([a-z0-9_.-]+)$/i) ||
+    trimmed.match(/^field:(group|individual):([a-z0-9-]+):(\d+):([a-z0-9_.-]+)$/i);
   if (fieldMatch) {
     if (!userId) {
       return NextResponse.json({ reply: 'Sign in first.', needAuth: true });
@@ -610,6 +652,7 @@ export async function POST(request: Request) {
             fieldStage,
             fieldKey,
             fieldValue,
+            fieldMemberId || undefined,
           )
         : await saveIndividualField(
             userId,

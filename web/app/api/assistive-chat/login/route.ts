@@ -37,7 +37,11 @@ export async function POST(request: Request) {
           'OTP sent by SMS. Enter the 6-digit code here. First-time numbers create an account automatically.',
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Could not send OTP';
+      const raw = e instanceof Error ? e.message : 'Could not send OTP';
+      const msg =
+        raw.startsWith('{') || raw.startsWith('[') || raw.length > 180
+          ? 'Could not send OTP. Please try again in a moment.'
+          : raw;
       return NextResponse.json({ ok: false, error: msg }, { status: 400 });
     }
   }

@@ -97,6 +97,15 @@ type EbisApiResponse = {
   };
 };
 
+function sanitizeSmsError(raw: string | undefined, fallback: string): string {
+  const text = String(raw || '').trim();
+  if (!text) return fallback;
+  if (text.startsWith('{') || text.startsWith('[')) {
+    return fallback;
+  }
+  return text.length > 180 ? fallback : text;
+}
+
 function parseEbisApiResponse(
   statusCode: number,
   responseBody: string,
@@ -107,6 +116,28 @@ function parseEbisApiResponse(
     jsonData = JSON.parse(responseBody) as EbisApiResponse | EbisLegacyResponse[];
   } catch {
     jsonData = null;
+  }
+
+  // Newer EBIS batch payload: { success: true, summary: { successful }, details }
+  if (
+    jsonData &&
+    !Array.isArray(jsonData) &&
+    (jsonData as { success?: boolean }).success === true
+  ) {
+    const summary = (
+      jsonData as {
+        summary?: { successful?: number; failed?: number; total_numbers?: number };
+      }
+    ).summary;
+    if (
+      summary == null ||
+      (typeof summary.successful === 'number' && summary.successful > 0) ||
+      (typeof summary.failed === 'number' &&
+        typeof summary.total_numbers === 'number' &&
+        summary.failed < summary.total_numbers)
+    ) {
+      return { success: true };
+    }
   }
 
   if (statusCode === 200) {
@@ -125,14 +156,17 @@ function parseEbisApiResponse(
 
       return {
         success: false,
-        error: legacyResult?.status_desc ?? 'Failed to send SMS',
+        error: sanitizeSmsError(legacyResult?.status_desc, 'Failed to send SMS'),
       };
     }
 
     if (jsonData && !Array.isArray(jsonData)) {
       return {
         success: false,
-        error: (jsonData.message ?? jsonData.error ?? responseBody) || 'Failed to send SMS',
+        error: sanitizeSmsError(
+          jsonData.message ?? jsonData.error,
+          'SMS could not be sent. Please try again in a moment.',
+        ),
       };
     }
 
@@ -142,7 +176,7 @@ function parseEbisApiResponse(
 
     return {
       success: false,
-      error: responseBody || 'Empty response from SMS API',
+      error: 'SMS could not be sent. Please try again in a moment.',
     };
   }
 
@@ -152,17 +186,19 @@ function parseEbisApiResponse(
 
     return {
       success: false,
-      error:
-        detailMessage ??
-        jsonData.message ??
-        jsonData.error ??
-        `HTTP error ${statusCode}`,
+      error: sanitizeSmsError(
+        detailMessage ?? jsonData.message ?? jsonData.error,
+        `SMS request failed (HTTP ${statusCode}). Please try again.`,
+      ),
     };
   }
 
   return {
     success: false,
-    error: responseBody || `HTTP error ${statusCode}`,
+    error: sanitizeSmsError(
+      responseBody,
+      `SMS request failed (HTTP ${statusCode}). Please try again.`,
+    ),
   };
 }
 
