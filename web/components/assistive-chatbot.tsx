@@ -35,6 +35,7 @@ type Phase =
   | 'await_username'
   | 'await_password'
   | 'await_phone'
+  | 'await_otp_email'
   | 'await_otp'
   | 'menu'
   | 'apply_choice'
@@ -110,6 +111,7 @@ export const AssistiveChatbot: FC<{
   const [phase, setPhase] = useState<Phase>('boot');
   const [username, setUsername] = useState('');
   const [otpRequestId, setOtpRequestId] = useState('');
+  const [otpPhone, setOtpPhone] = useState('');
   const [allowPdfOnly, setAllowPdfOnly] = useState(false);
   const [quickReplies, setQuickReplies] = useState<ChatQuickReply[]>([]);
   const [docType, setDocType] = useState<'national_id' | 'kra_pin' | 'passport'>(
@@ -148,6 +150,7 @@ export const AssistiveChatbot: FC<{
     setPhase('await_auth_method');
     setUsername('');
     setOtpRequestId('');
+    setOtpPhone('');
     setQuickReplies(AUTH_METHOD_REPLIES);
     setFieldContext(null);
     setAllowPdfOnly(false);
@@ -218,6 +221,9 @@ export const AssistiveChatbot: FC<{
         message?: string;
         requestId?: string;
         redirect?: string;
+        needEmail?: boolean;
+        channel?: string;
+        maskedEmail?: string | null;
       };
     },
     [],
@@ -402,15 +408,32 @@ export const AssistiveChatbot: FC<{
         }
 
         if (phase === 'await_phone') {
+          setOtpPhone(trimmed);
           const result = await loginWithMethod({
             method: 'phone_send',
             phone: trimmed,
           });
-          if (!result.ok || !result.requestId) {
+          if (result.needEmail) {
+            setPhase('await_otp_email');
+            setQuickReplies([
+              {
+                id: 'back-auth',
+                label: 'Back to sign-in options',
+                value: 'auth:back',
+              },
+            ]);
             pushAssistant(
               setMessages,
               result.error ||
-                'Could not send OTP. Check the number and try again.',
+                'SMS unavailable. Enter the email linked to this phone to receive a code (or use eCitizen / password).',
+            );
+            setBusy(false);
+            return;
+          }
+          if (!result.ok || !result.requestId) {
+            pushAssistant(
+              setMessages,
+              `${result.error || 'Could not send OTP. Check the number and try again.'}\nYou can also use eCitizen or email/password.`,
             );
             setBusy(false);
             return;
@@ -424,6 +447,34 @@ export const AssistiveChatbot: FC<{
             setMessages,
             result.message ||
               'OTP sent by SMS. Enter the 6-digit code (it stays masked).',
+          );
+          setBusy(false);
+          return;
+        }
+
+        if (phase === 'await_otp_email') {
+          const result = await loginWithMethod({
+            method: 'phone_send',
+            phone: otpPhone,
+            email: trimmed,
+          });
+          if (!result.ok || !result.requestId) {
+            pushAssistant(
+              setMessages,
+              `${result.error || 'Could not send the code by email.'}\nTry another email, or use eCitizen / password login.`,
+            );
+            setBusy(false);
+            return;
+          }
+          setOtpRequestId(result.requestId);
+          setPhase('await_otp');
+          setQuickReplies([
+            { id: 'back-auth', label: 'Back to sign-in options', value: 'auth:back' },
+          ]);
+          pushAssistant(
+            setMessages,
+            result.message ||
+              'Code sent by email. Enter the 6-digit code (it stays masked).',
           );
           setBusy(false);
           return;
@@ -616,6 +667,7 @@ export const AssistiveChatbot: FC<{
       phase,
       username,
       otpRequestId,
+      otpPhone,
       docType,
       fieldContext,
       pathname,
@@ -903,7 +955,9 @@ export const AssistiveChatbot: FC<{
                   ? 'Password'
                   : otpMode
                     ? 'OTP code'
-                    : phase === 'await_phone'
+                    : phase === 'await_otp_email'
+                      ? 'Account email for OTP…'
+                      : phase === 'await_phone'
                       ? 'Mobile number…'
                       : phase === 'await_username'
                         ? 'Email / username'
@@ -921,7 +975,9 @@ export const AssistiveChatbot: FC<{
                   ? 'current-password'
                   : otpMode
                     ? 'one-time-code'
-                    : phase === 'await_phone'
+                    : phase === 'await_otp_email'
+                      ? 'email'
+                      : phase === 'await_phone'
                       ? 'tel'
                       : 'username'
               }

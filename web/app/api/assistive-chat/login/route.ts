@@ -1,4 +1,8 @@
-import { requestLoginOtp, verifyLoginOtp } from '@/lib/auth/otp';
+import {
+  OtpDeliveryError,
+  requestLoginOtp,
+  verifyLoginOtp,
+} from '@/lib/auth/otp';
 import { loginWithEmail } from '@/lib/auth/user';
 import { createSession, getSessionUserId } from '@/lib/auth/session';
 import { NextResponse } from 'next/server';
@@ -21,6 +25,7 @@ export async function POST(request: Request) {
 
   if (method === 'phone_send' || method === 'otp_send') {
     const phone = String(body.phone || body.username || '').trim();
+    const email = String(body.email || '').trim();
     if (!phone) {
       return NextResponse.json(
         { ok: false, error: 'Enter a Kenyan mobile number (e.g. 07… or +254…).' },
@@ -28,19 +33,32 @@ export async function POST(request: Request) {
       );
     }
     try {
-      const result = await requestLoginOtp(phone);
+      const result = await requestLoginOtp(phone, {
+        email: email || undefined,
+      });
       return NextResponse.json({
         ok: true,
         method: 'phone',
         requestId: result.request_id,
-        message:
-          'OTP sent by SMS. Enter the 6-digit code here. First-time numbers create an account automatically.',
+        channel: result.channel,
+        maskedEmail: result.maskedEmail || null,
+        message: result.message,
       });
     } catch (e) {
+      if (e instanceof OtpDeliveryError && e.needEmail) {
+        return NextResponse.json(
+          {
+            ok: false,
+            needEmail: true,
+            error: e.message,
+          },
+          { status: 400 },
+        );
+      }
       const raw = e instanceof Error ? e.message : 'Could not send OTP';
       const msg =
         raw.startsWith('{') || raw.startsWith('[') || raw.length > 180
-          ? 'Could not send OTP. Please try again in a moment.'
+          ? 'Could not send OTP. Please try again in a moment, or use eCitizen / password login.'
           : raw;
       return NextResponse.json({ ok: false, error: msg }, { status: 400 });
     }

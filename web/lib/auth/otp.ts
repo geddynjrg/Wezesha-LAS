@@ -9,14 +9,89 @@ import {
   generateOtpCode,
   sendSms,
 } from '@/lib/sms/sms.service';
+import { sendPlainEmail } from '@/lib/email/mail.service';
 import { IdentifierType } from '@/generated/prisma';
 
 const OTP_EXPIRY_SECONDS = 300;
 const MAX_OTP_ATTEMPTS = 3;
 const MAX_REQUESTS_PER_HOUR = 5;
 
-export async function requestLoginOtp(phone: string) {
+export type OtpDeliveryChannel = 'sms' | 'email';
+
+export type RequestLoginOtpResult = {
+  request_id: string;
+  channel: OtpDeliveryChannel;
+  message: string;
+  maskedEmail?: string;
+};
+
+export class OtpDeliveryError extends Error {
+  needEmail: boolean;
+
+  constructor(message: string, needEmail = false) {
+    super(message);
+    this.name = 'OtpDeliveryError';
+    this.needEmail = needEmail;
+  }
+}
+
+function maskEmail(email: string): string {
+  const trimmed = email.trim();
+  const at = trimmed.indexOf('@');
+  if (at <= 0) return '***';
+  const local = trimmed.slice(0, at);
+  const domain = trimmed.slice(at + 1);
+  const visible = local.slice(0, Math.min(1, local.length));
+  return `${visible}***@${domain}`;
+}
+
+function normalizeEmail(raw: string | undefined): string | null {
+  const email = String(raw || '')
+    .trim()
+    .toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return null;
+  }
+  return email;
+}
+
+async function findEmailForPhone(phoneNumber: string): Promise<string | null> {
+  const digits = phoneNumber.replace(/\D/g, '');
+  const variants = Array.from(
+    new Set(
+      [
+        phoneNumber,
+        phoneNumber.replace(/^\+/, ''),
+        digits.startsWith('254') ? `+${digits}` : null,
+        digits.startsWith('254') ? digits : null,
+        digits.startsWith('254') && digits.length === 12
+          ? `0${digits.slice(3)}`
+          : null,
+      ].filter(Boolean) as string[],
+    ),
+  );
+
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: variants.map((phoneNumber) => ({ phoneNumber })),
+    },
+    select: { email: true },
+  });
+
+  return normalizeEmail(user?.email || undefined);
+}
+
+/**
+ * Request a login OTP. Tries Ebis SMS first; on SMS failure falls back to email.
+ * WhatsApp OTP failover is intentionally not used yet (Meta Business API still
+ * test-only for this tenant) — keep email as the production failover channel.
+ */
+export async function requestLoginOtp(
+  phone: string,
+  options?: { email?: string },
+): Promise<RequestLoginOtpResult> {
   const phoneNumber = normalizeKenyanPhoneForApi(phone);
+  const providedEmail = normalizeEmail(options?.email);
 
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
   const recentCount = await prisma.otpRequest.count({
@@ -27,7 +102,9 @@ export async function requestLoginOtp(phone: string) {
   });
 
   if (recentCount >= MAX_REQUESTS_PER_HOUR) {
-    throw new Error('Too many OTP requests. Please try again later.');
+    throw new OtpDeliveryError(
+      'Too many OTP requests. Please try again later.',
+    );
   }
 
   const otpCode = generateOtpCode();
@@ -48,11 +125,55 @@ export async function requestLoginOtp(phone: string) {
     `Your login code is: ${otpCode}`,
   );
 
-  if (!smsResult.success) {
-    throw new Error(smsResult.error ?? 'Failed to send OTP');
+  if (smsResult.success) {
+    return {
+      request_id: requestId,
+      channel: 'sms',
+      message:
+        'OTP sent by SMS. Enter the 6-digit code here. First-time numbers create an account automatically.',
+    };
   }
 
-  return { request_id: requestId };
+  console.warn(
+    '[OTP] SMS delivery failed; attempting email failover (code not logged)',
+  );
+
+  const email = providedEmail || (await findEmailForPhone(phoneNumber));
+  if (!email) {
+    await prisma.otpRequest.delete({ where: { requestId } }).catch(() => undefined);
+    throw new OtpDeliveryError(
+      'SMS unavailable. Enter the email linked to this phone to receive a code, or use eCitizen / password login.',
+      true,
+    );
+  }
+
+  const mailResult = await sendPlainEmail({
+    to: email,
+    subject: 'Your Uwezo Fund login code',
+    text:
+      `Your login code is: ${otpCode}\n\n` +
+      `It expires in 5 minutes.\n` +
+      `If you did not request this code, you can ignore this email.`,
+  });
+
+  if (!mailResult.success) {
+    await prisma.otpRequest.delete({ where: { requestId } }).catch(() => undefined);
+    const detail =
+      mailResult.skipped
+        ? 'Email is not configured on this server.'
+        : 'Email delivery failed.';
+    throw new OtpDeliveryError(
+      `SMS unavailable and ${detail} Try eCitizen or email/password login.`,
+    );
+  }
+
+  const masked = maskEmail(email);
+  return {
+    request_id: requestId,
+    channel: 'email',
+    maskedEmail: masked,
+    message: `SMS unavailable — we sent a code to your email (${masked}). Enter it here.`,
+  };
 }
 
 export async function verifyLoginOtp(requestId: string, otpCode: string) {

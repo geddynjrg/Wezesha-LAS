@@ -2,6 +2,7 @@
  * Lightweight email helper for Majuu portal.
  * Uses SMTP when MAIL_HOST / SMTP_HOST is configured; otherwise logs and returns.
  * No PII beyond the provided recipient address is written to logs.
+ * Never log OTP codes or message bodies that may contain them.
  */
 
 type SendEmailInput = {
@@ -14,6 +15,10 @@ type SendEmailResult = { success: boolean; error?: string; skipped?: boolean };
 
 function trim(value: string | undefined): string {
   return value?.trim() ?? '';
+}
+
+function redactBody(text: string): string {
+  return text.replace(/\b\d{4,8}\b/g, '******');
 }
 
 export async function sendPlainEmail(
@@ -62,6 +67,13 @@ export async function sendPlainEmail(
       to: input.to,
       subject: input.subject,
       text: input.text,
+    });
+
+    console.info('[Mail] sent', {
+      toDomain: input.to.includes('@') ? input.to.split('@')[1] : 'unknown',
+      subject: input.subject,
+      // body redacted — may contain OTP
+      bodyPreview: redactBody(input.text).slice(0, 40),
     });
 
     return { success: true };

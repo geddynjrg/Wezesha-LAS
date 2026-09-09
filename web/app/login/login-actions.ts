@@ -6,7 +6,11 @@ import {
   createEmailLoginSchema,
   createPhoneLoginSchema,
 } from '@/app/login/login-schema';
-import { requestLoginOtp, verifyLoginOtp } from '@/lib/auth/otp';
+import {
+  OtpDeliveryError,
+  requestLoginOtp,
+  verifyLoginOtp,
+} from '@/lib/auth/otp';
 import { loginWithEmail } from '@/lib/auth/user';
 import { createSession } from '@/lib/auth/session';
 import { formatKenyanPhoneForApi } from '@/lib/phone/kenyan-phone';
@@ -77,12 +81,20 @@ export const phoneLoginAction: FormAction<PhoneLogin> = async (
         };
       }
 
-      const otpResponse = await requestLoginOtp(fullPhoneNumber);
+      const failoverEmail =
+        typeof (values as { email?: string }).email === 'string'
+          ? String((values as { email?: string }).email)
+          : undefined;
+
+      const otpResponse = await requestLoginOtp(fullPhoneNumber, {
+        email: failoverEmail,
+      });
       return {
         success: true,
-        message: t('otpSent'),
+        message: otpResponse.message || t('otpSent'),
         values,
         otpRequestId: otpResponse.request_id,
+        otpChannel: otpResponse.channel,
       };
     }
 
@@ -90,6 +102,15 @@ export const phoneLoginAction: FormAction<PhoneLogin> = async (
     await createSession(tokens);
     return { success: true, otpRequestId: undefined };
   } catch (err) {
+    if (err instanceof OtpDeliveryError && err.needEmail) {
+      return {
+        success: false,
+        errors: {},
+        message: err.message,
+        values,
+        needEmail: true,
+      };
+    }
     return {
       success: false,
       errors: {},
