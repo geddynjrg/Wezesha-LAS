@@ -253,6 +253,19 @@ async function notifyGroupMembersOfSubmission(application: {
     });
 
     const result = await sendSms(member.mobile, message);
+    if (process.env.APP_PUSH_ENABLED !== "false") {
+      try {
+        const { notifyAppUser } = await import("@/lib/push/app-push");
+        await notifyAppUser({
+          title: "Loan application update",
+          body: message,
+          kind: "loan_status",
+          phone: member.mobile,
+        });
+      } catch (e) {
+        console.warn("[push] loan status notify failed", e);
+      }
+    }
     if (!result.success) {
       console.error(`[SMS] Failed to notify ${member.name}:`, result.error);
       failures.push(member.name);

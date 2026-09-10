@@ -125,12 +125,29 @@ export async function requestLoginOtp(
     `Your login code is: ${otpCode}`,
   );
 
+  // Dual-channel: EBIS SMS (above) + app push/inbox when the member is signed into the app.
+  if (process.env.APP_PUSH_ENABLED !== 'false') {
+    try {
+      const { notifyAppUser } = await import('@/lib/push/app-push');
+      await notifyAppUser({
+        title: 'Uwezo Fund login code',
+        body: `Your login code is: ${otpCode}`,
+        kind: 'otp',
+        phone: phoneNumber,
+        email: providedEmail,
+        meta: { requestId },
+      });
+    } catch (e) {
+      console.warn('[OTP] app push notify failed', e);
+    }
+  }
+
   if (smsResult.success) {
     return {
       request_id: requestId,
       channel: 'sms',
       message:
-        'OTP sent by SMS. Enter the 6-digit code here. First-time numbers create an account automatically.',
+        'OTP sent by SMS (and app notification if signed in). Enter the 6-digit code here. First-time numbers create an account automatically.',
     };
   }
 
