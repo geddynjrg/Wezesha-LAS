@@ -54,8 +54,10 @@ export async function POST(request: Request) {
     request,
     NextResponse.json({
       ok: true,
+      delivered: result.delivered,
       inboxKeys: result.inboxKeys,
       devices: result.devices,
+      fcmSent: result.fcmSent,
       fcm: result.fcm,
       fcmConfigured: result.fcmConfigured,
     }),

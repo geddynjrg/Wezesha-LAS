@@ -16,7 +16,7 @@ const OTP_EXPIRY_SECONDS = 300;
 const MAX_OTP_ATTEMPTS = 3;
 const MAX_REQUESTS_PER_HOUR = 5;
 
-export type OtpDeliveryChannel = 'sms' | 'email';
+export type OtpDeliveryChannel = 'sms' | 'email' | 'app';
 
 export type RequestLoginOtpResult = {
   request_id: string;
@@ -125,29 +125,36 @@ export async function requestLoginOtp(
     `Your login code is: ${otpCode}`,
   );
 
-  // Dual-channel: EBIS SMS (above) + app push/inbox when the member is signed into the app.
-  if (process.env.APP_PUSH_ENABLED !== 'false') {
+  const otpMessage = `Your login code is: ${otpCode}`;
+
+  async function tryDeliverToApp(emailHint?: string | null) {
+    if (process.env.APP_PUSH_ENABLED === 'false') {
+      return { delivered: false, devices: 0 };
+    }
     try {
       const { notifyAppUser } = await import('@/lib/push/app-push');
-      await notifyAppUser({
+      return await notifyAppUser({
         title: 'Uwezo Fund login code',
-        body: `Your login code is: ${otpCode}`,
+        body: otpMessage,
         kind: 'otp',
         phone: phoneNumber,
-        email: providedEmail,
+        email: emailHint || providedEmail || undefined,
         meta: { requestId },
       });
     } catch (e) {
       console.warn('[OTP] app push notify failed', e);
+      return { delivered: false, devices: 0 };
     }
   }
 
   if (smsResult.success) {
+    // Bonus: also mirror to app when a device is linked.
+    void tryDeliverToApp(providedEmail);
     return {
       request_id: requestId,
-      channel: 'sms',
+      channel: 'sms' as const,
       message:
-        'OTP sent by SMS (and app notification if signed in). Enter the 6-digit code here. First-time numbers create an account automatically.',
+        'OTP sent by SMS (and to the Uwezo Fund app if you are signed in). Enter the 6-digit code here. First-time numbers create an account automatically.',
     };
   }
 
@@ -156,41 +163,60 @@ export async function requestLoginOtp(
   );
 
   const email = providedEmail || (await findEmailForPhone(phoneNumber));
-  if (!email) {
+  if (email) {
+    const mailResult = await sendPlainEmail({
+      to: email,
+      subject: 'Your Uwezo Fund login code',
+      text:
+        `Your login code is: ${otpCode}\n\n` +
+        `It expires in 5 minutes.\n` +
+        `If you did not request this code, you can ignore this email.`,
+    });
+
+    if (mailResult.success) {
+      void tryDeliverToApp(email);
+      const masked = maskEmail(email);
+      return {
+        request_id: requestId,
+        channel: 'email' as const,
+        maskedEmail: masked,
+        message: `SMS unavailable — we sent a code to your email (${masked}). Enter it here.`,
+      };
+    }
+
+    console.warn('[OTP] Email delivery failed; attempting Uwezo Fund app delivery');
+    const appResult = await tryDeliverToApp(email);
+    if (appResult.delivered) {
+      return {
+        request_id: requestId,
+        channel: 'app' as const,
+        message:
+          'SMS and email were unavailable — we sent your login code to the Uwezo Fund app. Open the app (check the floating notification / Notifications) and enter the 6-digit code here.',
+      };
+    }
+
     await prisma.otpRequest.delete({ where: { requestId } }).catch(() => undefined);
     throw new OtpDeliveryError(
-      'SMS unavailable. Enter the email linked to this phone to receive a code, or use eCitizen / password login.',
-      true,
+      'SMS, email, and Uwezo Fund app delivery all failed. Try eCitizen or email/password login.',
     );
   }
 
-  const mailResult = await sendPlainEmail({
-    to: email,
-    subject: 'Your Uwezo Fund login code',
-    text:
-      `Your login code is: ${otpCode}\n\n` +
-      `It expires in 5 minutes.\n` +
-      `If you did not request this code, you can ignore this email.`,
-  });
-
-  if (!mailResult.success) {
-    await prisma.otpRequest.delete({ where: { requestId } }).catch(() => undefined);
-    const detail =
-      mailResult.skipped
-        ? 'Email is not configured on this server.'
-        : 'Email delivery failed.';
-    throw new OtpDeliveryError(
-      `SMS unavailable and ${detail} Try eCitizen or email/password login.`,
-    );
+  // No email on file — try app before asking the user for an email.
+  const appOnly = await tryDeliverToApp(null);
+  if (appOnly.delivered) {
+    return {
+      request_id: requestId,
+      channel: 'app' as const,
+      message:
+        'SMS unavailable — we sent your login code to the Uwezo Fund app. Open the app (check the floating notification / Notifications) and enter the 6-digit code here.',
+    };
   }
 
-  const masked = maskEmail(email);
-  return {
-    request_id: requestId,
-    channel: 'email',
-    maskedEmail: masked,
-    message: `SMS unavailable — we sent a code to your email (${masked}). Enter it here.`,
-  };
+  await prisma.otpRequest.delete({ where: { requestId } }).catch(() => undefined);
+  throw new OtpDeliveryError(
+    'SMS unavailable. Enter the email linked to this phone to receive a code, open the Uwezo Fund app if signed in, or use eCitizen / password login.',
+    true,
+  );
 }
 
 export async function verifyLoginOtp(requestId: string, otpCode: string) {

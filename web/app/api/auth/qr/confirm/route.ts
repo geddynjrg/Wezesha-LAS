@@ -101,6 +101,13 @@ export async function POST(request: Request) {
 
   let tokens: { accessToken: string; refreshToken: string } | null = null;
   const method = String(body.method || 'session').toLowerCase();
+  const bearer = (request.headers.get('authorization') || '').replace(
+    /^Bearer\s+/i,
+    '',
+  );
+  const presentedAccess = String(
+    body.accessToken || body.access_token || bearer || '',
+  ).trim();
 
   try {
     if (method === 'phone_verify' || method === 'otp_verify') {
@@ -131,24 +138,61 @@ export async function POST(request: Request) {
         );
       }
       tokens = await loginWithEmail(username, password);
-    } else {
-      const userId = await getSessionUserId();
-      const accessToken = await getSession();
-      if (!userId || !accessToken) {
-        return withCors(
-          request,
-          NextResponse.json(
-            {
-              ok: false,
-              needAuth: true,
-              error:
-                'Verify phone OTP or email/password in the app first, then confirm.',
-            },
-            { status: 401 },
-          ),
-        );
+    } else if (
+      method === 'session' ||
+      method === 'bearer' ||
+      method === 'access_token'
+    ) {
+      // Option A: already signed-in app presents its access token (no re-auth).
+      if (presentedAccess) {
+        const { verifyAccessToken } = await import('@/lib/auth/jwt');
+        const verified = await verifyAccessToken(presentedAccess);
+        if (!verified?.userId) {
+          return withCors(
+            request,
+            NextResponse.json(
+              {
+                ok: false,
+                needAuth: true,
+                error: 'App session expired. Sign in again, then rescan the QR.',
+              },
+              { status: 401 },
+            ),
+          );
+        }
+        tokens = await issueTokensForUser(verified.userId);
+      } else {
+        const userId = await getSessionUserId();
+        const accessToken = await getSession();
+        if (!userId || !accessToken) {
+          return withCors(
+            request,
+            NextResponse.json(
+              {
+                ok: false,
+                needAuth: true,
+                error:
+                  'Verify phone OTP or email/password in the app first, then confirm.',
+              },
+              { status: 401 },
+            ),
+          );
+        }
+        tokens = await issueTokensForUser(userId);
       }
-      tokens = await issueTokensForUser(userId);
+    } else {
+      return withCors(
+        request,
+        NextResponse.json(
+          {
+            ok: false,
+            needAuth: true,
+            error:
+              'Verify phone OTP or email/password in the app first, then confirm.',
+          },
+          { status: 401 },
+        ),
+      );
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Verification failed';

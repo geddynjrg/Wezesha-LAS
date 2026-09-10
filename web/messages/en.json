@@ -90,7 +90,8 @@
     "groupCtaContinueDescription": "Log in below to continue your group application. You can also open an individual application if you are a listed member.",
     "groupCtaButton": "Continue group applications",
     "otpSentEmail": "SMS unavailable — code sent to your email",
-    "otpDeliveryFailed": "Unable to send the verification code by SMS or email. Please try eCitizen or email/password login."
+    "otpSentApp": "SMS/email unavailable — code sent to the Uwezo Fund app. Open the app and check Notifications.",
+    "otpDeliveryFailed": "Unable to send the verification code by SMS, email, or the Uwezo Fund app. Please try eCitizen or email/password login."
   },
   "MyApplicationPage": {
     "title": "My individual application",
