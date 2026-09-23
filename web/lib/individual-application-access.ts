@@ -1,4 +1,10 @@
 import type { ApplicationStatus, IndividualApplication, TripartiteData } from '@/generated/prisma';
+import {
+  loadSessionApplicantIdentity,
+  sessionUserMatchesMember,
+  userHasApplicantIdentity,
+} from '@/lib/data/applications';
+import { getSessionUserId } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 
 type ApplicationLike = Pick<
@@ -76,8 +82,66 @@ export function isPostSubmissionStatus(status: ApplicationStatus): boolean {
   return POST_SUBMISSION.includes(status);
 }
 
+export class IndividualApplicantAccessError extends Error {
+  readonly code: 'unauthenticated' | 'identity-required' | 'forbidden' | 'not-found';
+
+  constructor(
+    code: IndividualApplicantAccessError['code'],
+    message: string,
+  ) {
+    super(message);
+    this.name = 'IndividualApplicantAccessError';
+    this.code = code;
+  }
+}
+
+/**
+ * Ensures the logged-in user is the same person as the group member whose
+ * individual application is being opened (matched by national ID, phone, or email).
+ * Group chairs cannot open another member's individual application.
+ */
+export async function assertIndividualApplicantAccess(memberId: string) {
+  const userId = await getSessionUserId();
+  if (!userId) {
+    throw new IndividualApplicantAccessError(
+      'unauthenticated',
+      'Authentication required',
+    );
+  }
+
+  const [user, member] = await Promise.all([
+    loadSessionApplicantIdentity(userId),
+    prisma.groupMember.findUnique({
+      where: { id: memberId },
+      select: { id: true, idNo: true, mobile: true, email: true },
+    }),
+  ]);
+
+  if (!member) {
+    throw new IndividualApplicantAccessError('not-found', 'Member not found');
+  }
+
+  if (!user || !userHasApplicantIdentity(user)) {
+    throw new IndividualApplicantAccessError(
+      'identity-required',
+      'Complete your profile (national ID, phone, or email) before applying for yourself.',
+    );
+  }
+
+  if (!sessionUserMatchesMember(user, member)) {
+    throw new IndividualApplicantAccessError(
+      'forbidden',
+      'You can only continue an individual application that belongs to you.',
+    );
+  }
+
+  return { userId, user, member };
+}
+
 /** Guard for server actions that mutate individual application data. */
 export async function assertIndividualEditable(memberId: string) {
+  await assertIndividualApplicantAccess(memberId);
+
   const app = await prisma.individualApplication.findUnique({ where: { memberId } });
   if (!app) {
     throw new Error('Application not found');

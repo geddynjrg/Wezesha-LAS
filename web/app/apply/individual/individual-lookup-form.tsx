@@ -12,7 +12,8 @@ export const IndividualLookupForm: FC<{ error?: string }> = ({ error }) => (
     <Card radius="lg" variant="primary" className="space-y-4 p-6">
       <h1 className="typo-h4">Individual Application</h1>
       <p className="typo-body-medium">
-        Enter your national ID to continue your individual Wezesha Majuu application.
+        Enter your own national ID to continue your individual Wezesha Majuu application.
+        You can only apply for yourself — not for another person.
       </p>
       {error === 'not-found' && (
         <p className="text-destructive typo-body-small">
@@ -20,12 +21,24 @@ export const IndividualLookupForm: FC<{ error?: string }> = ({ error }) => (
           your ID number.
         </p>
       )}
+      {error === 'not-you' && (
+        <p className="text-destructive typo-body-small">
+          That national ID does not match your signed-in account. Sign in with the account
+          that matches the applicant, or enter your own ID number.
+        </p>
+      )}
+      {error === 'identity-required' && (
+        <p className="text-destructive typo-body-small">
+          Your account is missing a national ID, phone, or email. Sign in with eCitizen or
+          update your profile so we can confirm you are applying for yourself.
+        </p>
+      )}
       <Form action="/apply/individual/start" method="get" className="space-y-4">
         <FormField
           name="idNo"
-          label="National ID Number"
+          label="Your National ID Number"
           required
-          placeholder="Enter national ID"
+          placeholder="Enter your national ID"
         />
         <Button type="submit" className="w-full md:w-auto">
           Continue

@@ -407,23 +407,15 @@ export const TripartiteAgreementDocument: FC<TripartiteAgreementDocumentProps> =
               </>
             ) : (
               <>
-                <input
-                  type="text"
-                  name="migrantName"
-                  placeholder="Full Name"
-                  defaultValue={migrantName}
-                  onChange={(event) => onMigrantNameChange?.(event.target.value)}
-                  required
-                  className="doc-input min-w-[300px]"
-                />
+                <input type="hidden" name="migrantName" value={migrantName} />
+                <input type="hidden" name="idNumber" value={idNumber} />
+                <span className="inline-block min-w-[300px] border-b border-dotted border-black px-1 font-medium">
+                  {migrantName}
+                </span>
                 <span>ID No</span>
-                <input
-                  type="text"
-                  name="idNumber"
-                  defaultValue={idNumber}
-                  required
-                  className="doc-input w-[120px]"
-                />
+                <span className="inline-block w-[120px] border-b border-dotted border-black px-1 font-medium">
+                  {idNumber}
+                </span>
                 <span>Passport no.</span>
                 <input
                   type="text"

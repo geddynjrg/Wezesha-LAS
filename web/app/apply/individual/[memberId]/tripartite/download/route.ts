@@ -1,5 +1,9 @@
 import { getSessionUserId } from '@/lib/auth/session';
 import {
+  assertIndividualApplicantAccess,
+  IndividualApplicantAccessError,
+} from '@/lib/individual-application-access';
+import {
   loadSignedTripartitePdf,
   pdfDownloadResponse,
   TripartitePdfError,
@@ -16,6 +20,23 @@ export async function GET(
     return NextResponse.redirect(
       new URL(`/login?callbackUrl=/apply/individual/${memberId}/tripartite/download`, request.url),
     );
+  }
+
+  try {
+    await assertIndividualApplicantAccess(memberId);
+  } catch (error) {
+    if (error instanceof IndividualApplicantAccessError) {
+      if (error.code === 'unauthenticated') {
+        return NextResponse.redirect(
+          new URL(
+            `/login?callbackUrl=/apply/individual/${memberId}/tripartite/download`,
+            request.url,
+          ),
+        );
+      }
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    throw error;
   }
 
   try {

@@ -1,6 +1,9 @@
 'use server';
 
-import { canConsentToPredisbursement } from '@/lib/individual-application-access';
+import {
+  assertIndividualApplicantAccess,
+  canConsentToPredisbursement,
+} from '@/lib/individual-application-access';
 import { getIndividualApplication } from '@/lib/data/applications';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
@@ -10,6 +13,8 @@ export async function acceptPredisbursementAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertIndividualApplicantAccess(memberId);
+
   const accepted = formData.get('predisbursementAccepted') === 'on';
   if (!accepted) {
     return {

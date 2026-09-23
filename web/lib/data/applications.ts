@@ -8,10 +8,8 @@ import {
   normalizeKenyanPhoneForApi,
   normalizeKenyanPhoneLocal,
 } from '@/lib/phone/kenyan-phone';
-import {
-  buildGroupSubmissionConfirmationMessage,
-  sendSms,
-} from '@/lib/sms/sms.service';
+import { buildGroupSubmissionConfirmationMessage } from '@/lib/sms/sms.service';
+import { notifyApplicationStatusChannels } from '@/lib/notify/notify-application-status';
 import { ApplicationPhase, ApplicationStatus, Prisma } from '@/generated/prisma';
 
 async function generateUniqueAcknowledgmentNumber() {
@@ -95,6 +93,60 @@ async function loadUserIdentity(userId: string) {
   });
 }
 
+export type ApplicantIdentity = {
+  idNumber: string | null;
+  phoneNumber: string | null;
+  email: string | null;
+};
+
+export type MemberIdentity = {
+  idNo: string;
+  mobile: string | null;
+  email: string | null;
+};
+
+/** True when the logged-in person is the same individual as this group member. */
+export function sessionUserMatchesMember(
+  user: ApplicantIdentity,
+  member: MemberIdentity,
+): boolean {
+  const idDigits = digitsOnly(user.idNumber);
+  if (idDigits && digitsOnly(member.idNo) === idDigits) return true;
+
+  const localPhone = user.phoneNumber ? normalizeKenyanPhoneLocal(user.phoneNumber) : null;
+  if (localPhone && normalizeKenyanPhoneLocal(member.mobile) === localPhone) return true;
+
+  if (
+    user.phoneNumber &&
+    member.mobile &&
+    normalizeKenyanPhoneForApi(user.phoneNumber) === normalizeKenyanPhoneForApi(member.mobile)
+  ) {
+    return true;
+  }
+
+  if (
+    user.email &&
+    member.email &&
+    user.email.trim().toLowerCase() === member.email.trim().toLowerCase()
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+export function userHasApplicantIdentity(user: ApplicantIdentity): boolean {
+  return Boolean(
+    digitsOnly(user.idNumber) ||
+      (user.phoneNumber && normalizeKenyanPhoneLocal(user.phoneNumber)) ||
+      user.email?.trim(),
+  );
+}
+
+export async function loadSessionApplicantIdentity(userId: string) {
+  return loadUserIdentity(userId);
+}
+
 function memberIdentityFiltersFromUser(user: {
   idNumber: string | null;
   phoneNumber: string | null;
@@ -170,28 +222,7 @@ export async function getUserIndividualMemberships(userId: string) {
     orderBy: { updatedAt: 'desc' },
   });
 
-  const idDigits = digitsOnly(user.idNumber);
-  const localPhone = user.phoneNumber ? normalizeKenyanPhoneLocal(user.phoneNumber) : null;
-
-  return members.filter((member) => {
-    if (idDigits && digitsOnly(member.idNo) === idDigits) return true;
-    if (localPhone && normalizeKenyanPhoneLocal(member.mobile) === localPhone) return true;
-    if (
-      user.phoneNumber &&
-      member.mobile &&
-      normalizeKenyanPhoneForApi(user.phoneNumber) === normalizeKenyanPhoneForApi(member.mobile)
-    ) {
-      return true;
-    }
-    if (
-      user.email &&
-      member.email &&
-      user.email.trim().toLowerCase() === member.email.trim().toLowerCase()
-    ) {
-      return true;
-    }
-    return false;
-  });
+  return members.filter((member) => sessionUserMatchesMember(user, member));
 }
 
 export type UserIndividualMembership = Awaited<
@@ -232,14 +263,14 @@ export async function updateGroupProgress(id: string, progress: number) {
 async function notifyGroupMembersOfSubmission(application: {
   acknowledgmentNumber: string;
   groupData: { groupName: string } | null;
-  members: Array<{ id: string; name: string; idNo: string; mobile: string }>;
+  members: Array<{ id: string; name: string; idNo: string; mobile: string; email?: string | null }>;
 }) {
   const groupName = application.groupData?.groupName?.trim() || 'your group';
   const failures: string[] = [];
 
   for (const member of application.members) {
-    if (!member.mobile?.trim()) {
-      console.warn(`[SMS] Skipping member ${member.name} — no mobile number`);
+    if (!member.mobile?.trim() && !member.email?.trim()) {
+      console.warn(`[notify] Skipping member ${member.name} — no mobile or email`);
       failures.push(member.name);
       continue;
     }
@@ -252,22 +283,18 @@ async function notifyGroupMembersOfSubmission(application: {
       applyLink,
     });
 
-    const result = await sendSms(member.mobile, message);
-    if (process.env.APP_PUSH_ENABLED !== "false") {
-      try {
-        const { notifyAppUser } = await import("@/lib/push/app-push");
-        await notifyAppUser({
-          title: "Loan application update",
-          body: message,
-          kind: "loan_status",
-          phone: member.mobile,
-        });
-      } catch (e) {
-        console.warn("[push] loan status notify failed", e);
-      }
-    }
-    if (!result.success) {
-      console.error(`[SMS] Failed to notify ${member.name}:`, result.error);
+    const result = await notifyApplicationStatusChannels({
+      recipient: {
+        name: member.name,
+        phone: member.mobile,
+        email: member.email,
+      },
+      title: 'Wezesha Majuu application update',
+      emailSubject: 'Your Wezesha Majuu group application was submitted',
+      message,
+    });
+    if (!result.sms && !result.email && !result.app) {
+      console.error(`[notify] Failed to notify ${member.name} on SMS, email, and app`);
       failures.push(member.name);
     }
   }
@@ -393,6 +420,17 @@ export async function submitIndividualApplication(id: string) {
   const groupApp = await prisma.groupApplication.findUnique({
     where: { id: application.member.applicationId },
     include: { members: true },
+  });
+
+  await notifyApplicationStatusChannels({
+    recipient: {
+      name: application.member.name,
+      phone: application.member.mobile,
+      email: application.member.email,
+    },
+    title: 'Wezesha Majuu application submitted',
+    emailSubject: 'Your Wezesha Majuu individual application was submitted',
+    message: `Dear ${application.member.name}, your Uwezo Fund Wezesha Majuu individual application (Ref: ${application.acknowledgmentNumber}) has been submitted and is awaiting review. Track it on majuu.uwezo.go.ke or the Uwezo Fund app.`,
   });
 
   if (groupApp) {

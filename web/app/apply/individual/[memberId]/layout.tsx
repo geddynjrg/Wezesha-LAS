@@ -1,9 +1,15 @@
 import { ApplicationGuidance } from '@/components/application-guidance';
 import { ApplyFormStepper } from '@/components/apply-form-stepper';
+import { DataConsentNotice } from '@/components/data-consent-notice';
+import { PrescriptiveGuidance } from '@/components/prescriptive-guidance';
 import { INDIVIDUAL_STEPS } from '@/lib/constants/majuu-steps';
 import { resolveGuidanceForPath } from '@/lib/application-guidance';
 import { getIndividualApplication } from '@/lib/data/applications';
-import { isIndividualApplicationEditable } from '@/lib/individual-application-access';
+import {
+  assertIndividualApplicantAccess,
+  IndividualApplicantAccessError,
+  isIndividualApplicationEditable,
+} from '@/lib/individual-application-access';
 import { getSessionUserId } from '@/lib/auth/session';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
@@ -31,6 +37,24 @@ export default async function IndividualApplyLayout({
     redirect(`/login?callbackUrl=/apply/individual/${memberId}/individual-information`);
   }
 
+  try {
+    await assertIndividualApplicantAccess(memberId);
+  } catch (error) {
+    if (error instanceof IndividualApplicantAccessError) {
+      if (error.code === 'unauthenticated') {
+        redirect(`/login?callbackUrl=/apply/individual/${memberId}/individual-information`);
+      }
+      if (error.code === 'identity-required') {
+        redirect('/apply/individual?error=identity-required');
+      }
+      if (error.code === 'forbidden') {
+        redirect('/apply/individual?error=not-you');
+      }
+      notFound();
+    }
+    throw error;
+  }
+
   const application = await getIndividualApplication(memberId);
 
   if (!application) {
@@ -56,9 +80,21 @@ export default async function IndividualApplyLayout({
           baseUrl={`/apply/individual/${memberId}`}
         />
       ) : null}
+      <DataConsentNotice
+        userId={userId}
+        applicationId={application.id}
+        gateApply
+      />
       {editable ? (
         <div className="mx-auto w-full max-w-5xl px-4 pt-4">
           <ApplicationGuidance guidance={guidance} />
+          <PrescriptiveGuidance
+            destinationCountry={application.recruitment?.countryOfDestination}
+            hasAgency={Boolean(
+              application.recruitment?.localAgentName ||
+                application.recruitment?.employerAbroad,
+            )}
+          />
         </div>
       ) : null}
       {children}

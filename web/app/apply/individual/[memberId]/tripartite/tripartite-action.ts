@@ -2,6 +2,7 @@
 
 import { tripartiteFormSchema } from './tripartite-schema';
 import { submitIndividualApplication } from '@/lib/data/applications';
+import { assertIndividualEditable } from '@/lib/individual-application-access';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 
@@ -17,25 +18,30 @@ export async function submitTripartiteAction(memberId: string, _prev: unknown, f
     };
   }
 
-  const app = await prisma.individualApplication.findUniqueOrThrow({ where: { memberId } });
+  const app = await assertIndividualEditable(memberId);
+  const member = await prisma.groupMember.findUniqueOrThrow({
+    where: { id: memberId },
+    select: { name: true, idNo: true, passportNo: true },
+  });
 
-  if (app.submittedAt || app.status !== 'DRAFT') {
-    redirect(`/apply/individual/${memberId}/dashboard`);
-  }
+  // Identity must stay bound to the member record — ignore form overrides for name/ID.
+  const migrantName = member.name;
+  const idNumber = member.idNo;
+  const passportNumber = parsed.data.passportNumber || member.passportNo || '';
 
   await prisma.$transaction(async (tx) => {
     await tx.tripartiteData.upsert({
       where: { applicationId: app.id },
       create: {
         applicationId: app.id,
-        migrantName: parsed.data.migrantName,
-        idNumber: parsed.data.idNumber,
-        passportNumber: parsed.data.passportNumber,
+        migrantName,
+        idNumber,
+        passportNumber,
       },
       update: {
-        migrantName: parsed.data.migrantName,
-        idNumber: parsed.data.idNumber,
-        passportNumber: parsed.data.passportNumber,
+        migrantName,
+        idNumber,
+        passportNumber,
       },
     });
 
@@ -61,8 +67,8 @@ export async function getTripartiteDefaults(memberId: string) {
   if (!app) return null;
 
   return {
-    migrantName: app.tripartite?.migrantName ?? app.member.name,
-    idNumber: app.tripartite?.idNumber ?? app.member.idNo,
+    migrantName: app.member.name,
+    idNumber: app.member.idNo,
     passportNumber: app.tripartite?.passportNumber ?? app.member.passportNo ?? '',
     tripartiteAccepted: app.tripartiteAccepted,
   };
