@@ -1,5 +1,6 @@
 'use server';
 
+import { assertGroupChairAccess } from '@/lib/group-application-access';
 import { parseLoanAmountForm } from '@/app/apply/group/[id]/loan-amount/loan-amount-schema';
 import { GuarantorOtpStatus } from '@/generated/prisma';
 import {
@@ -19,6 +20,10 @@ import {
   isOtpExpired,
   sendSms,
 } from '@/lib/sms/sms.service';
+import {
+  consentOtpDeliveryMessage,
+  notifyConsentOtpToApp,
+} from '@/lib/push/notify-consent-otp';
 import { redirect } from 'next/navigation';
 
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -136,6 +141,7 @@ export async function sendMemberConsentOtpAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertGroupChairAccess(applicationId);
   const members = await prisma.groupMember.findMany({
     where: { applicationId },
     select: { id: true },
@@ -201,15 +207,22 @@ export async function sendMemberConsentOtpAction(
   });
 
   const smsResult = await sendSms(member.mobile, message);
+  const appResult = await notifyConsentOtpToApp({
+    phone: phoneNumber,
+    email: member.email,
+    message,
+    title: 'Uwezo Fund member confirmation code',
+    meta: { applicationId, memberId, kind: 'member_confirmation' },
+  });
 
-  if (!smsResult.success) {
+  if (!smsResult.success && !appResult.delivered) {
     return {
       success: false as const,
       memberId,
       action: 'sendOtp' as const,
       message:
         smsResult.error ??
-        'Failed to send OTP SMS. Please verify the phone number and try again.',
+        'Failed to send OTP by SMS or Uwezo Fund app. Please verify the phone number and try again.',
     };
   }
 
@@ -239,7 +252,12 @@ export async function sendMemberConsentOtpAction(
     success: true as const,
     memberId,
     action: 'sendOtp' as const,
-    message: `OTP sent to ${member.name} at ${formatKenyanPhoneForDisplay(member.mobile)}.`,
+    message: consentOtpDeliveryMessage({
+      name: member.name,
+      phoneDisplay: formatKenyanPhoneForDisplay(member.mobile),
+      smsOk: smsResult.success,
+      app: appResult,
+    }),
   };
 }
 
@@ -249,6 +267,7 @@ export async function verifyMemberConsentOtpAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertGroupChairAccess(applicationId);
   const otpInput = formData.get(`otp_${memberId}`)?.toString().trim();
   const members = await prisma.groupMember.findMany({
     where: { applicationId },
@@ -354,6 +373,7 @@ export async function saveLoanAmountAction(
   prevOrFormData: unknown,
   maybeFormData?: FormData,
 ) {
+  await assertGroupChairAccess(applicationId);
   const formData = resolveFormData(prevOrFormData, maybeFormData);
   const formValues = Object.fromEntries(formData.entries());
   const members = await prisma.groupMember.findMany({ where: { applicationId } });

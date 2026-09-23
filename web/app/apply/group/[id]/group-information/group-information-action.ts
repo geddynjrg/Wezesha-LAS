@@ -2,6 +2,12 @@
 
 import { groupInformationSchema } from '@/app/apply/group/[id]/group-information/group-information-schema';
 import { updateGroupProgress } from '@/lib/data/applications';
+import {
+  assertGroupChairAccess,
+  assertSessionUserIsMseaChair,
+  GroupChairAccessError,
+} from '@/lib/group-application-access';
+import { lookupMseaBusiness } from '@/lib/msea';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 
@@ -54,6 +60,19 @@ export async function saveGroupInformationAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  try {
+    await assertGroupChairAccess(applicationId);
+  } catch (error) {
+    if (error instanceof GroupChairAccessError) {
+      return {
+        success: false as const,
+        errors: { registrationNumber: [error.message] },
+        values: Object.fromEntries(formData.entries()),
+      };
+    }
+    throw error;
+  }
+
   const raw = Object.fromEntries(formData.entries());
   const parsed = groupInformationSchema.safeParse(raw);
 
@@ -66,6 +85,51 @@ export async function saveGroupInformationAction(
   }
 
   const data = parsed.data;
+
+  // Enforce MSEA chair identity when registration lookup is available.
+  const msea = await lookupMseaBusiness(data.registrationNumber);
+  if (msea?.partners?.length) {
+    try {
+      await assertSessionUserIsMseaChair(data.registrationNumber, msea.partners);
+    } catch (error) {
+      if (error instanceof GroupChairAccessError) {
+        return {
+          success: false as const,
+          errors: { registrationNumber: [error.message] },
+          values: raw,
+        };
+      }
+      throw error;
+    }
+
+    // Persist partner phones/IDs onto member slots for later individual binding.
+    for (const partner of msea.partners) {
+      const idNo = (partner.id_number || '').trim();
+      const name = (partner.name || '').trim();
+      if (!idNo || !name) continue;
+      const mobile = (partner.phone_number || '').trim() || 'pending';
+      try {
+        await prisma.groupMember.upsert({
+          where: {
+            applicationId_idNo: { applicationId, idNo },
+          },
+          create: {
+            applicationId,
+            name,
+            idNo,
+            mobile,
+          },
+          update: {
+            name,
+            ...(mobile !== 'pending' ? { mobile } : {}),
+          },
+        });
+      } catch {
+        /* skip bad partner rows */
+      }
+    }
+  }
+
   const clusterPayload = buildClusterPayload(data);
 
   await prisma.groupData.upsert({

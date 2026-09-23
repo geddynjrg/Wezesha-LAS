@@ -71,6 +71,19 @@ export interface MseaPartner {
   id_type?: string;
 }
 
+/** True when MSEA partner type indicates the group chair / lead official. */
+export function isMseaChairPartner(partner: MseaPartner): boolean {
+  const type = `${partner.type || ''}`.toLowerCase();
+  return /chair|chairman|chairperson|official|proprietor|director|leader|president/.test(
+    type,
+  );
+}
+
+/** Partners flagged as chair/official in the MSEA registration JSON. */
+export function findMseaChairPartners(partners: MseaPartner[]): MseaPartner[] {
+  return (partners || []).filter(isMseaChairPartner);
+}
+
 interface MseaBusinessRecord {
   business_name?: string;
   registration_number?: string;

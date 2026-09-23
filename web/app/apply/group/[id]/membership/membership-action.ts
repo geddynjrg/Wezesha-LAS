@@ -1,5 +1,6 @@
 'use server';
 
+import { assertGroupChairAccess } from '@/lib/group-application-access';
 import {
   MIN_GROUP_MEMBERS,
   createMembershipSchema,
@@ -15,6 +16,7 @@ export async function saveMembershipAction(
   _prev: unknown,
   formData: FormData,
 ) {
+  await assertGroupChairAccess(applicationId);
   const groupData = await prisma.groupData.findUnique({
     where: { applicationId },
     select: { registrationNumber: true },

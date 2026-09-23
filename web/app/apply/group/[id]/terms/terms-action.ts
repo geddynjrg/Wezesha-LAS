@@ -1,5 +1,6 @@
 'use server';
 
+import { assertGroupChairAccess } from '@/lib/group-application-access';
 import { updateGroupProgress } from '@/lib/data/applications';
 import { resolveFormData } from '@/lib/resolve-form-data';
 import { prisma } from '@/lib/prisma';
@@ -13,6 +14,7 @@ export async function saveTermsAction(
   prevOrFormData: unknown,
   maybeFormData?: FormData,
 ) {
+  await assertGroupChairAccess(applicationId);
   const formData = resolveFormData(prevOrFormData, maybeFormData);
   const parsed = schema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) {

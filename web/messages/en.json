@@ -95,10 +95,11 @@
   },
   "MyApplicationPage": {
     "title": "My individual application",
-    "notFoundDescription": "We could not match your national ID to a member record yet. Enter your own national ID to find your application. Only applications for your ID are shown here.",
+    "notFoundDescription": "We could not match your national ID (or your group-registered phone) to a member record yet. Create/login with your own ID — for example 26447696 only sees applications for 26447696, not another member such as 42665878.",
     "lookupById": "Enter my national ID",
     "chooseTitle": "Your individual applications",
-    "chooseDescription": "These are only the individual applications linked to your national ID. Open the one you want to continue."
+    "chooseDescription": "Only applications linked to your national ID (and the phone captured for you during group registration) are listed here.",
+    "groupChairOnly": "Only the group chair can open a group application. As a member, continue with your individual application below or look up your national ID."
   },
   "SignUpPage": {
     "title": "Create an Account",

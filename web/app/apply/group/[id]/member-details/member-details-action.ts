@@ -1,5 +1,6 @@
 'use server';
 
+import { assertGroupChairAccess } from '@/lib/group-application-access';
 import { parseMemberDetailsForm } from '@/app/apply/group/[id]/member-details/member-details-schema';
 import { MIN_GROUP_MEMBERS } from '@/lib/constants/group-membership';
 import { updateGroupProgress } from '@/lib/data/applications';
@@ -81,6 +82,7 @@ export async function saveMemberDetailsAction(
   prevOrFormData: unknown,
   maybeFormData?: FormData,
 ) {
+  await assertGroupChairAccess(applicationId);
   const formData = resolveFormData(prevOrFormData, maybeFormData);
   const formValues = Object.fromEntries(formData.entries());
   const count = Number(formData.get('memberCount') ?? '0');

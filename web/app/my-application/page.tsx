@@ -13,14 +13,20 @@ import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-export default async function MyApplicationPage() {
+export default async function MyApplicationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const userId = await getSessionUserId();
   if (!userId) {
     redirect('/login?callbackUrl=/my-application');
   }
 
+  const { error } = await searchParams;
+
   const directUrl = await resolveSingleIndividualApplicationUrl(userId);
-  if (directUrl) {
+  if (directUrl && error !== 'group-chair-only') {
     redirect(directUrl);
   }
 
@@ -32,6 +38,9 @@ export default async function MyApplicationPage() {
       <Container className="max-w-xl space-y-4 py-10">
         <Card variant="primary" className="space-y-4 p-6">
           <h1 className="typo-h4">{t('title')}</h1>
+          {error === 'group-chair-only' ? (
+            <p className="text-destructive">{t('groupChairOnly')}</p>
+          ) : null}
           <p className="text-neutral-600">{t('notFoundDescription')}</p>
           <div className="flex flex-wrap gap-3">
             <Button asChild>
@@ -47,6 +56,9 @@ export default async function MyApplicationPage() {
     <Container className="space-y-6 py-8">
       <div className="space-y-2">
         <h1 className="typo-h3">{t('chooseTitle')}</h1>
+        {error === 'group-chair-only' ? (
+          <p className="text-destructive">{t('groupChairOnly')}</p>
+        ) : null}
         <p className="text-neutral-600">{t('chooseDescription')}</p>
       </div>
       <div className="grid justify-center gap-8 md:grid-cols-2 md:justify-normal">

@@ -1,5 +1,6 @@
 'use server';
 
+import { assertGroupChairAccess } from '@/lib/group-application-access';
 import { updateGroupProgress } from '@/lib/data/applications';
 import {
   buildGuaranteeConsentMessage,
@@ -14,6 +15,7 @@ function isMemberSigned(formData: FormData, memberId: string): boolean {
 }
 
 export async function requestGuaranteeConsentAction(applicationId: string) {
+  await assertGroupChairAccess(applicationId);
   const application = await prisma.groupApplication.findUnique({
     where: { id: applicationId },
     include: {
@@ -79,6 +81,7 @@ export async function saveGuaranteeAction(
   prevOrFormData: unknown,
   maybeFormData?: FormData,
 ) {
+  await assertGroupChairAccess(applicationId);
   const formData = resolveFormData(prevOrFormData, maybeFormData);
   const members = await prisma.groupMember.findMany({ where: { applicationId } });
 

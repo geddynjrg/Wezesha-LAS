@@ -189,6 +189,22 @@ export const MseaRegistrationFields: FC<MseaRegistrationFieldsProps> = ({
         );
       }
 
+      // Confirm the signed-in user is the MSEA group chair before populating.
+      const chairUrl = new URL('/api/businesses/verify-chair', window.location.origin);
+      chairUrl.searchParams.set('registration_number', trimmed);
+      const chairRes = await fetch(chairUrl.toString(), { cache: 'no-store' });
+      const chairData = (await chairRes.json()) as {
+        ok?: boolean;
+        isChair?: boolean;
+        error?: string;
+      };
+      if (!chairRes.ok || chairData.isChair === false) {
+        throw new Error(
+          chairData.error ||
+            'Only the group chair on this MSEA registration can start the group application. Members should use individual applications.',
+        );
+      }
+
       const registrationDate = formatRegistrationDate(record.registration_date);
       if (!registrationDate) {
         throw new Error(
@@ -278,6 +294,8 @@ export const MseaRegistrationFields: FC<MseaRegistrationFieldsProps> = ({
         </h3>
         <p className="typo-body-small text-muted-foreground mt-1">
           Verify your MSEA registration number to auto-populate group details.
+          Only the group chair listed on the MSEA partners list can continue this
+          group application; other members use individual applications.
         </p>
       </div>
 

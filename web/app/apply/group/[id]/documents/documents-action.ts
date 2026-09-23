@@ -1,5 +1,6 @@
 'use server';
 
+import { assertGroupChairAccess } from '@/lib/group-application-access';
 import { submitGroupApplication } from '@/lib/data/applications';
 import { validateGroupDocumentsReady } from '@/lib/group-documents';
 import { resolveFormData } from '@/lib/resolve-form-data';
@@ -10,6 +11,7 @@ export async function submitDocumentsAction(
   prevOrFormData: unknown,
   maybeFormData?: FormData,
 ) {
+  await assertGroupChairAccess(applicationId);
   resolveFormData(prevOrFormData, maybeFormData);
 
   const validation = await validateGroupDocumentsReady(applicationId);

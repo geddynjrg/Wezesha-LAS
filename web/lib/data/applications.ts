@@ -188,7 +188,8 @@ export async function getUserGroupApplications(userId: string) {
   const user = await loadUserIdentity(userId);
   if (!user) return [];
 
-  const memberFilters = memberIdentityFiltersFromUser(user);
+  // Group applications belong to the chair who created them — never list a
+  // group merely because the user appears as a member (shared phones/IDs).
   const relatedUserOr: Prisma.UserWhereInput[] = [{ id: userId }];
   if (user.email) relatedUserOr.push({ email: user.email });
   if (user.idNumber) relatedUserOr.push({ idNumber: user.idNumber });
@@ -206,12 +207,7 @@ export async function getUserGroupApplications(userId: string) {
   const relatedUserIds = Array.from(new Set(relatedUsers.map((row) => row.id)));
 
   return prisma.groupApplication.findMany({
-    where: {
-      OR: [
-        { userId: { in: relatedUserIds } },
-        ...(memberFilters.length > 0 ? [{ members: { some: { OR: memberFilters } } }] : []),
-      ],
-    },
+    where: { userId: { in: relatedUserIds } },
     include: groupApplicationListInclude,
     orderBy: { updatedAt: 'desc' },
   });
@@ -219,6 +215,8 @@ export async function getUserGroupApplications(userId: string) {
 
 /** Individual applications for the logged-in person (matched by ID, phone, or email). */
 export async function getUserIndividualMemberships(userId: string) {
+  await bindApplicantPhoneFromGroupMembers(userId);
+
   const user = await loadUserIdentity(userId);
   if (!user) return [];
 
@@ -234,8 +232,65 @@ export async function getUserIndividualMemberships(userId: string) {
     orderBy: { updatedAt: 'desc' },
   });
 
-  // Final gate: ID-only when account has idNumber; exact phone/email otherwise.
-  return members.filter((member) => sessionUserMatchesMember(user, member));
+  const matched = members.filter((member) => sessionUserMatchesMember(user, member));
+
+  // Phone-only accounts: if several different national IDs share the phone, do
+  // not guess — require national ID (eCitizen) before listing.
+  if (!digitsOnly(user.idNumber)) {
+    const distinctIds = new Set(
+      matched.map((m) => digitsOnly(m.idNo)).filter(Boolean),
+    );
+    if (distinctIds.size > 1) return [];
+  }
+
+  return matched;
+}
+
+/**
+ * Bind the phone captured on the applicant's group member row(s) onto the user
+ * account when the national ID matches and the account phone is empty/pending.
+ */
+export async function bindApplicantPhoneFromGroupMembers(userId: string) {
+  const user = await loadUserIdentity(userId);
+  if (!user) return;
+
+  const idDigits = digitsOnly(user.idNumber);
+  if (!idDigits) return;
+
+  const members = await prisma.groupMember.findMany({
+    where: {
+      OR: [
+        ...(user.idNumber?.trim() ? [{ idNo: user.idNumber.trim() }] : []),
+        { idNo: idDigits },
+      ],
+    },
+    select: { idNo: true, mobile: true },
+    orderBy: { updatedAt: 'desc' },
+    take: 20,
+  });
+
+  const mine = members.filter((m) => digitsOnly(m.idNo) === idDigits);
+  const memberPhone = mine
+    .map((m) => m.mobile?.trim())
+    .find((mobile) => mobile && mobile.toLowerCase() !== 'pending' && /\d/.test(mobile));
+
+  if (!memberPhone) return;
+
+  const userLocal = user.phoneNumber
+    ? normalizeKenyanPhoneLocal(user.phoneNumber)
+    : null;
+  const memberLocal = normalizeKenyanPhoneLocal(memberPhone);
+  if (!memberLocal) return;
+  if (userLocal && userLocal === memberLocal) return;
+
+  // Only fill missing phone — never overwrite a different verified phone.
+  if (userLocal) return;
+
+  const apiPhone = normalizeKenyanPhoneForApi(memberPhone);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { phoneNumber: apiPhone || memberPhone },
+  });
 }
 
 export type UserIndividualMembership = Awaited<
