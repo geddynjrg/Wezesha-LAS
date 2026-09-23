@@ -223,6 +223,9 @@ export async function sendSms(mobile: string, message: string): Promise<SendSmsR
     message,
   };
 
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 8_000);
+
   try {
     const response = await fetch(SMS_API_URL, {
       method: 'POST',
@@ -231,6 +234,7 @@ export async function sendSms(mobile: string, message: string): Promise<SendSmsR
         'User-Agent': 'Majuu-Portal/1.0',
       },
       body: JSON.stringify(requestBody),
+      signal: ac.signal,
     });
 
     const responseBody = await response.text();
@@ -245,10 +249,24 @@ export async function sendSms(mobile: string, message: string): Promise<SendSmsR
 
     return parsed;
   } catch (error) {
+    const aborted =
+      (error instanceof Error && error.name === 'AbortError') ||
+      (typeof error === 'object' &&
+        error !== null &&
+        'name' in error &&
+        (error as { name?: string }).name === 'AbortError');
+    if (aborted) {
+      // Provider often delivers before HTTP responds — treat as soft success
+      // so login UI can show the OTP field without waiting forever.
+      console.warn('[SMS] EBIS API timed out after 8s (message may still deliver)');
+      return { success: true };
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Network error sending SMS',
     };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
