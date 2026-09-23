@@ -37,9 +37,6 @@ export default async function MyApplicationPage() {
             <Button asChild>
               <Link href="/apply/individual">{t('lookupById')}</Link>
             </Button>
-            <Button asChild variant="secondary">
-              <Link href="/dashboard">{t('viewAllApplications')}</Link>
-            </Button>
           </div>
         </Card>
       </Container>

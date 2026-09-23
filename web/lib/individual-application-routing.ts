@@ -1,5 +1,4 @@
 import {
-  getUserGroupApplications,
   getUserIndividualMemberships,
   type UserIndividualMembership,
 } from '@/lib/data/applications';
@@ -8,19 +7,15 @@ import {
   isIndividualApplicationSubmitted,
 } from '@/lib/individual-application-url';
 
+/**
+ * Individual applications for the signed-in applicant only.
+ * Matching is ID-first (see getUserIndividualMemberships) so shared group
+ * phones/emails do not list other members on /my-application.
+ */
 export async function getMatchedIndividualMemberships(
   userId: string,
 ): Promise<UserIndividualMembership[]> {
-  const [applications, memberships] = await Promise.all([
-    getUserGroupApplications(userId),
-    getUserIndividualMemberships(userId),
-  ]);
-
-  const ownedGroupIds = new Set(applications.map((application) => application.id));
-
-  return memberships.filter(
-    (member) => !ownedGroupIds.has(member.applicationId) || member.individualApplication,
-  );
+  return getUserIndividualMemberships(userId);
 }
 
 export function individualMembershipUrl(member: UserIndividualMembership): string {

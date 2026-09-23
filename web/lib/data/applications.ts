@@ -111,7 +111,11 @@ export function sessionUserMatchesMember(
   member: MemberIdentity,
 ): boolean {
   const idDigits = digitsOnly(user.idNumber);
-  if (idDigits && digitsOnly(member.idNo) === idDigits) return true;
+  // If the account has a national ID, only that ID may match — never phone/email.
+  // Shared group phones/emails otherwise surface other members on /my-application.
+  if (idDigits) {
+    return digitsOnly(member.idNo) === idDigits;
+  }
 
   const localPhone = user.phoneNumber ? normalizeKenyanPhoneLocal(user.phoneNumber) : null;
   if (localPhone && normalizeKenyanPhoneLocal(member.mobile) === localPhone) return true;
@@ -154,15 +158,23 @@ function memberIdentityFiltersFromUser(user: {
 }): Prisma.GroupMemberWhereInput[] {
   const filters: Prisma.GroupMemberWhereInput[] = [];
   const idDigits = digitsOnly(user.idNumber);
-  if (user.idNumber?.trim()) {
-    filters.push({ idNo: user.idNumber.trim() });
-  }
+
+  // Prefer exact national ID candidates when present (no phone/email OR).
   if (idDigits) {
-    filters.push({ idNo: idDigits });
+    const idCandidates = new Set<string>();
+    if (user.idNumber?.trim()) idCandidates.add(user.idNumber.trim());
+    idCandidates.add(idDigits);
+    const noLeadingZeros = idDigits.replace(/^0+/, '') || idDigits;
+    idCandidates.add(noLeadingZeros);
+    for (const candidate of idCandidates) {
+      filters.push({ idNo: candidate });
+    }
+    return filters;
   }
 
   for (const variant of phoneMatchVariants(user.phoneNumber)) {
-    filters.push({ mobile: { contains: variant } });
+    // Exact equals only — never contains (shared prefixes pull other members).
+    filters.push({ mobile: variant });
   }
 
   if (user.email?.trim()) {
@@ -222,6 +234,7 @@ export async function getUserIndividualMemberships(userId: string) {
     orderBy: { updatedAt: 'desc' },
   });
 
+  // Final gate: ID-only when account has idNumber; exact phone/email otherwise.
   return members.filter((member) => sessionUserMatchesMember(user, member));
 }
 

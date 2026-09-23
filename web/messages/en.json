@@ -70,7 +70,7 @@
     "signUp": "Sign up",
     "or": "Or",
     "loginFormHeading": "Login Form",
-    "otpSent": "Code sent to your phone",
+    "otpSent": "Code sent to your phone and to the Uwezo Fund app if you stayed signed in",
     "unknownError": "Unknown error",
     "invalidEmail": "Invalid email address",
     "passwordRequired": "Password is required",
@@ -80,7 +80,7 @@
     "sendOtp": "Send code",
     "changePhoneNumber": "Change phone number",
     "otpCode": "Login code",
-    "enterOtpSentTo": "Enter the 6-digit code sent to {phoneNumber}",
+    "enterOtpSentTo": "Enter the 6-digit code sent to {phoneNumber} by SMS and to the Uwezo Fund app",
     "invalidOtpFormat": "Invalid OTP code format",
     "memberCtaTitle": "Group member?",
     "memberCtaDescription": "Open your personal application after login. Use the same phone number or national ID as on your member record.",
@@ -89,17 +89,16 @@
     "groupCtaDescription": "Log in below to continue group applications started with this phone number, email, or national ID.",
     "groupCtaContinueDescription": "Log in below to continue your group application. You can also open an individual application if you are a listed member.",
     "groupCtaButton": "Continue group applications",
-    "otpSentEmail": "SMS unavailable — code sent to your email",
+    "otpSentEmail": "SMS unavailable — code sent to your email (and to the Uwezo Fund app if you stayed signed in)",
     "otpSentApp": "SMS/email unavailable — code sent to the Uwezo Fund app. Open the app and check Notifications.",
     "otpDeliveryFailed": "Unable to send the verification code by SMS, email, or the Uwezo Fund app. Please try eCitizen or email/password login."
   },
   "MyApplicationPage": {
     "title": "My individual application",
-    "notFoundDescription": "We could not match your account to a member record yet. Enter your national ID to find your application, or start a new group application.",
+    "notFoundDescription": "We could not match your national ID to a member record yet. Enter your own national ID to find your application. Only applications for your ID are shown here.",
     "lookupById": "Enter my national ID",
-    "viewAllApplications": "View all applications",
-    "chooseTitle": "Choose your individual application",
-    "chooseDescription": "Your account is linked to more than one individual application. Open the one you want to continue."
+    "chooseTitle": "Your individual applications",
+    "chooseDescription": "These are only the individual applications linked to your national ID. Open the one you want to continue."
   },
   "SignUpPage": {
     "title": "Create an Account",
