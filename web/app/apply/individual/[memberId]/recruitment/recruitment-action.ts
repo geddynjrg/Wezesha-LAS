@@ -1,10 +1,12 @@
 'use server';
 
 import { assertIndividualEditable } from '@/lib/individual-application-access';
-import { recruitmentSchema } from './recruitment-schema';
+import { fetchJobseekerPlacements } from '@/lib/neaims-placements';
+import { JOBSEEKER_PLACEMENT_REQUIRED, isNeaimsPlacementRequired } from '@/lib/neaims-placement-gate';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma';
 import { redirect } from 'next/navigation';
+import { recruitmentSchema } from './recruitment-schema';
 
 function parseDecimal(value: string | undefined): Prisma.Decimal | null {
   if (!value?.trim()) return null;
@@ -20,7 +22,7 @@ export async function saveRecruitmentAction(
 ) {
   await assertIndividualEditable(memberId);
 
-  const raw = Object.fromEntries(formData.entries());
+  const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = recruitmentSchema.safeParse(raw);
 
   if (!parsed.success) {
@@ -33,7 +35,22 @@ export async function saveRecruitmentAction(
 
   const app = await prisma.individualApplication.findUniqueOrThrow({
     where: { memberId },
+    include: { member: { select: { idNo: true } } },
   });
+
+  const placements = await fetchJobseekerPlacements(app.member.idNo);
+  if (isNeaimsPlacementRequired() && (!placements.ok || !placements.placed)) {
+    return {
+      success: false as const,
+      errors: {
+        agentNumber: [JOBSEEKER_PLACEMENT_REQUIRED],
+      },
+      values: raw,
+      message: placements.ok
+        ? `No NEAIMS job placement was found for National ID ${app.member.idNo}. ${JOBSEEKER_PLACEMENT_REQUIRED}`
+        : `NEAIMS could not confirm a job placement. ${JOBSEEKER_PLACEMENT_REQUIRED}`,
+    };
+  }
 
   const recruitmentData = {
     agentNumber: parsed.data.agentNumber,
