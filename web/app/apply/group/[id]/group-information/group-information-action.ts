@@ -7,53 +7,9 @@ import {
   assertSessionUserIsMseaChair,
   GroupChairAccessError,
 } from '@/lib/group-application-access';
-import { lookupMseaBusiness } from '@/lib/msea';
+import { lookupMseaBusiness, normalizeMseaRegistrationNumber } from '@/lib/msea';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
-
-function buildClusterPayload(data: ReturnType<typeof groupInformationSchema.parse>) {
-  const base = {
-    clusterCategory: data.clusterCategory,
-    clusterCounty: null as string | null,
-    clusterConstituency: null as string | null,
-    clusterOther: null as string | null,
-    destinationRegion: null as string | null,
-    destinationCountry: null as string | null,
-    agency: null as string | null,
-    agentNumber: null as string | null,
-    localAgentName: null as string | null,
-  };
-
-  switch (data.clusterCategory) {
-    case 'geographical':
-      return {
-        ...base,
-        clusterCounty: data.geoLocationType === 'county' ? data.clusterCounty ?? null : null,
-        clusterConstituency:
-          data.geoLocationType === 'constituency' ? data.clusterConstituency ?? null : null,
-      };
-    case 'destination':
-      return {
-        ...base,
-        destinationRegion: data.destinationRegion ?? null,
-        destinationCountry: data.destinationCountry ?? null,
-      };
-    case 'agency':
-      return {
-        ...base,
-        agency: data.agency ?? null,
-        agentNumber: data.agentNumber ?? null,
-        localAgentName: data.localAgentName ?? null,
-      };
-    case 'other':
-      return {
-        ...base,
-        clusterOther: data.clusterOther ?? null,
-      };
-    default:
-      return base;
-  }
-}
 
 export async function saveGroupInformationAction(
   applicationId: string,
@@ -85,12 +41,13 @@ export async function saveGroupInformationAction(
   }
 
   const data = parsed.data;
+  const registrationNumber = normalizeMseaRegistrationNumber(data.registrationNumber);
 
   // Enforce MSEA chair identity when registration lookup is available.
-  const msea = await lookupMseaBusiness(data.registrationNumber);
+  const msea = await lookupMseaBusiness(registrationNumber);
   if (msea?.partners?.length) {
     try {
-      await assertSessionUserIsMseaChair(data.registrationNumber, msea.partners);
+      await assertSessionUserIsMseaChair(registrationNumber, msea.partners);
     } catch (error) {
       if (error instanceof GroupChairAccessError) {
         return {
@@ -130,32 +87,27 @@ export async function saveGroupInformationAction(
     }
   }
 
-  const clusterPayload = buildClusterPayload(data);
-
   await prisma.groupData.upsert({
     where: { applicationId },
     create: {
       applicationId,
       groupName: data.groupName,
-      registrationNumber: data.registrationNumber,
+      registrationNumber:
+        normalizeMseaRegistrationNumber(
+          msea?.registration_number || registrationNumber,
+        ),
       registrationDate: new Date(data.registrationDate),
-      county: data.county,
-      constituency: data.constituency,
-      ward: data.ward,
-      location: data.location,
-      subLocation: data.subLocation,
-      ...clusterPayload,
+      county: '',
+      constituency: '',
+      ward: '',
     },
     update: {
       groupName: data.groupName,
-      registrationNumber: data.registrationNumber,
+      registrationNumber:
+        normalizeMseaRegistrationNumber(
+          msea?.registration_number || registrationNumber,
+        ),
       registrationDate: new Date(data.registrationDate),
-      county: data.county,
-      constituency: data.constituency,
-      ward: data.ward,
-      location: data.location,
-      subLocation: data.subLocation,
-      ...clusterPayload,
     },
   });
 

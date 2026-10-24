@@ -1,6 +1,10 @@
 'use client';
 
 import { ApplyFormActionBar } from '@/components/apply-form-action-bar';
+import {
+  PassportBiodataUpload,
+  type PassportBiodataDocument,
+} from '@/components/passport-biodata-upload';
 import { FieldGuidance } from '@/components/field-guidance';
 import { FormField } from '@/components/form-field';
 import { SoftDuplicateBanner } from '@/components/soft-duplicate-banner';
@@ -26,11 +30,21 @@ import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 interface IndividualInformationFormProps {
   memberId: string;
   member: IndividualInformationMemberDefaults;
+  /** When true, KRA PIN came from NEAIMS and must stay read-only. */
+  kraPinLocked?: boolean;
+  passportBiodata?: PassportBiodataDocument | null;
 }
 
-const ReadOnlyDisplay: FC<{ label: string; value: string }> = ({ label, value }) => (
+const ReadOnlyDisplay: FC<{ label: string; value: string; required?: boolean }> = ({
+  label,
+  value,
+  required,
+}) => (
   <div className="flex w-full flex-col gap-1">
-    <span className={cn(labelVariants(), 'mb-1 font-bold')}>{label}</span>
+    <span className={cn(labelVariants(), 'mb-1 font-bold')}>
+      {label}
+      {required ? <span className="text-destructive"> *</span> : null}
+    </span>
     <Input value={value} readonly disabled />
   </div>
 );
@@ -38,6 +52,8 @@ const ReadOnlyDisplay: FC<{ label: string; value: string }> = ({ label, value })
 export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
   memberId,
   member,
+  kraPinLocked = false,
+  passportBiodata,
 }) => {
   const educationDefaults = useMemo(
     () => resolveEducationLevelForForm(member.educationLevel),
@@ -88,6 +104,11 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
   const onAckChange = useCallback((value: boolean) => setSoftAck(value), []);
   const onDuplicateChange = useCallback((has: boolean) => setHasSoftDuplicate(has), []);
 
+  const kraError =
+    Array.isArray(state.errors?.kraPin) && state.errors.kraPin[0]
+      ? String(state.errors.kraPin[0])
+      : null;
+
   return (
     <Form action={formAction} state={state}>
       <Container className="py-8">
@@ -103,9 +124,9 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
           />
 
           <div className="grid gap-4 md:grid-cols-2">
-            <ReadOnlyDisplay label="Full Name" value={member.name} />
+            <ReadOnlyDisplay label="Full Name" value={member.name} required />
             <FieldGuidance fieldKey="nationalId">
-              <ReadOnlyDisplay label="National ID" value={member.idNo} />
+              <ReadOnlyDisplay label="National ID" value={member.idNo} required />
             </FieldGuidance>
 
             <Field
@@ -133,16 +154,39 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
               name="dob"
               label="Date of Birth"
               type="date"
+              required
               state={state}
               defaultValue={formValues.dob}
             />
             <FieldGuidance fieldKey="kraPin">
-              <FormField
-                name="kraPin"
-                label="KRA PIN"
-                state={state}
-                defaultValue={formValues.kraPin}
-              />
+              {kraPinLocked ? (
+                <>
+                  <ReadOnlyDisplay
+                    label="KRA PIN"
+                    value={formValues.kraPin || '—'}
+                    required
+                  />
+                  <input
+                    type="hidden"
+                    name="kraPin"
+                    value={
+                      typeof formValues.kraPin === 'string' ? formValues.kraPin : ''
+                    }
+                  />
+                  {kraError ? (
+                    <p className="typo-body-small text-destructive">{kraError}</p>
+                  ) : null}
+                </>
+              ) : (
+                <FormField
+                  name="kraPin"
+                  label="KRA PIN"
+                  required
+                  state={state}
+                  defaultValue={formValues.kraPin}
+                  placeholder="Enter your KRA PIN"
+                />
+              )}
             </FieldGuidance>
 
             <Field
@@ -183,25 +227,28 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
             )}
 
             <FieldGuidance fieldKey="phone">
-              <ReadOnlyDisplay label="Mobile" value={member.mobile} />
+              <ReadOnlyDisplay label="Mobile" value={member.mobile} required />
             </FieldGuidance>
-            <ReadOnlyDisplay label="Email" value={member.email} />
-            <ReadOnlyDisplay label="Passport No" value={member.passportNo} />
+            <ReadOnlyDisplay label="Email" value={member.email} required />
+            <ReadOnlyDisplay label="Passport No" value={member.passportNo} required />
             <FormField
               name="poBox"
               label="P.O. Box"
+              required
               state={state}
               defaultValue={formValues.poBox}
             />
             <FormField
               name="postalCode"
               label="Postal Code"
+              required
               state={state}
               defaultValue={formValues.postalCode}
             />
             <FormField
               name="town"
               label="Town"
+              required
               state={state}
               defaultValue={formValues.town}
             />
@@ -209,10 +256,16 @@ export const IndividualInformationForm: FC<IndividualInformationFormProps> = ({
               name="dependants"
               label="Dependants"
               type="number"
+              required
               state={state}
               defaultValue={
                 formValues.dependants != null ? String(formValues.dependants) : undefined
               }
+            />
+            <PassportBiodataUpload
+              memberId={memberId}
+              initialDocument={passportBiodata}
+              error={state?.errors?.passportBiodata}
             />
           </div>
         </FormCard>

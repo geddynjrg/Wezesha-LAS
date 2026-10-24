@@ -27,6 +27,7 @@ import {
   extractStoredInvoiceLink,
   requestPesaflowInvoice,
 } from '@/lib/payments/pesaflow-invoice';
+import { PaymentStatus } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import type { PesaflowPaymentResult } from '@/lib/payments/pesaflow.types';
 
@@ -76,32 +77,52 @@ async function assertMemberAccess(memberId: string) {
   return { app, user };
 }
 
+function repaymentBalances(app: {
+  awardAmount?: { toString(): string } | null;
+  member: {
+    amount?: { toString(): string } | null;
+    amountRepaid?: { toString(): string } | null;
+  };
+}) {
+  const loaned = moneyNumber(app.awardAmount ?? app.member.amount);
+  const repaid = moneyNumber(app.member.amountRepaid);
+  const arrears = Math.max(0, Math.round((loaned - repaid) * 100) / 100);
+  return { loaned, repaid, arrears };
+}
+
 export async function getPesaflowPayContext(memberId: string) {
   const { app } = await assertMemberAccess(memberId);
   const configured = isPesaflowConfiguredFromEnv();
-  const amount = moneyNumber(app.awardAmount ?? app.member.amount);
+  const { loaned, repaid, arrears } = repaymentBalances(app);
   const eligible =
     isIndividualApplicationSubmitted(app) &&
     isLoanAmountApproved(app) &&
-    amount > 0;
+    arrears > 0;
 
-  const recent = eligible
-    ? await listRecentPaymentsForApplication(app.id)
-    : [];
+  const recent =
+    isIndividualApplicationSubmitted(app) && isLoanAmountApproved(app)
+      ? await listRecentPaymentsForApplication(app.id)
+      : [];
 
   return {
     configured,
     eligible,
-    amount,
+    /** Max payable = outstanding arrears (not full loan). */
+    amount: arrears,
+    loaned,
+    repaid,
+    arrears,
     acknowledgmentNumber: app.acknowledgmentNumber,
     recent,
     reason: !isIndividualApplicationSubmitted(app)
       ? 'Submit your application first.'
       : !isLoanAmountApproved(app)
         ? 'Available after your loan amount has been approved.'
-        : amount <= 0
+        : loaned <= 0
           ? 'No award amount is set for invoicing yet.'
-          : null,
+          : arrears <= 0
+            ? 'No arrears outstanding — cumulative repayments cover the loan amount.'
+            : null,
   };
 }
 
@@ -138,14 +159,26 @@ export async function initiatePesaflowInvoice(input: {
       };
     }
 
-    const defaultAmount = moneyNumber(app.awardAmount ?? app.member.amount);
-    const amount = input.amount && input.amount > 0 ? input.amount : defaultAmount;
+    const { loaned, repaid, arrears: maxAmount } = repaymentBalances(app);
+    const requested = input.amount && input.amount > 0 ? input.amount : maxAmount;
+    const amount = Math.round(requested * 100) / 100;
 
     if (!amount || amount <= 0) {
       return {
         success: false,
         configured: true,
-        error: 'A positive invoice amount is required.',
+        error: 'Enter the amount you wish to repay.',
+      };
+    }
+
+    if (maxAmount <= 0 || amount > maxAmount + 0.001) {
+      return {
+        success: false,
+        configured: true,
+        error:
+          maxAmount <= 0
+            ? 'No arrears outstanding on this loan.'
+            : `You can repay up to KES ${maxAmount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} in arrears (loaned KES ${loaned.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} − repaid KES ${repaid.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).`,
       };
     }
 
@@ -153,8 +186,10 @@ export async function initiatePesaflowInvoice(input: {
 
     const pending = await getActivePendingPayment(app.id);
     if (pending) {
+      const pendingAmount = moneyNumber(pending.amountExpected);
+      const sameAmount = Math.abs(pendingAmount - amount) < 0.01;
       const invoiceLink = extractStoredInvoiceLink(pending.checkoutPayload);
-      if (invoiceLink) {
+      if (sameAmount && invoiceLink) {
         return {
           success: true,
           configured: true,
@@ -166,6 +201,10 @@ export async function initiatePesaflowInvoice(input: {
           checkoutPayload: pending.checkoutPayload as Record<string, string>,
         };
       }
+      await prisma.paymentTransaction.update({
+        where: { id: pending.id },
+        data: { status: PaymentStatus.CANCELLED },
+      });
     }
 
     const clientName = app.member.name || user.name || 'Wezesha Majuu Applicant';

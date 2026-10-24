@@ -21,9 +21,7 @@ export function flattenCompletenessErrors(
 
 /** Individual applicant required doc categories (portal). */
 export const INDIVIDUAL_REQUIRED_CATEGORIES = [
-  { key: 'member-id', label: 'National ID' },
-  { key: 'member-passport', label: 'Passport photo' },
-  { key: 'member-kra', label: 'KRA PIN Certificate' },
+  { key: 'passport-biodata', label: 'Passport biodata page' },
 ] as const;
 
 export function checkIndividualDocumentCompleteness(

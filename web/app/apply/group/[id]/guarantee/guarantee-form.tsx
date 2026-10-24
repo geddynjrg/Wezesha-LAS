@@ -20,7 +20,7 @@ import {
 } from '@workspace/ui/components/table';
 import { useForm } from '@workspace/ui/hooks/use-form';
 import { cn } from '@workspace/ui/lib/utils';
-import { type FC, useMemo, useState, useTransition } from 'react';
+import { type FC, useEffect, useMemo, useState, useTransition } from 'react';
 import { z } from 'zod';
 
 const guaranteeSchema = z.object({});
@@ -48,6 +48,11 @@ export const GuaranteeForm: FC<GuaranteeFormProps> = ({ id, groupName, members }
 
   const [memberSignatures, setMemberSignatures] =
     useState<Record<string, boolean>>(initialSignatures);
+  const [remoteLocked, setRemoteLocked] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(
+      members.map((member) => [member.id, member.signature === 'accepted']),
+    ),
+  );
   const [requestLabel, setRequestLabel] = useState<RequestButtonLabel>('Request Signature');
   const [requestFeedback, setRequestFeedback] = useState<{
     message: string;
@@ -55,9 +60,53 @@ export const GuaranteeForm: FC<GuaranteeFormProps> = ({ id, groupName, members }
   } | null>(null);
   const [isRequesting, startRequest] = useTransition();
 
+  // Poll remote consents so Signed toggles turn on automatically
+  useEffect(() => {
+    let cancelled = false;
+
+    const sync = async () => {
+      try {
+        const res = await fetch(
+          `/api/guarantee/signatures?applicationId=${encodeURIComponent(id)}`,
+          { cache: 'no-store' },
+        );
+        const data = (await res.json()) as {
+          ok?: boolean;
+          signatures?: Record<string, 'accepted' | 'declined' | 'pending'>;
+        };
+        if (cancelled || !data.ok || !data.signatures) return;
+
+        setMemberSignatures((current) => {
+          const next = { ...current };
+          for (const [memberId, status] of Object.entries(data.signatures!)) {
+            if (status === 'accepted') next[memberId] = true;
+          }
+          return next;
+        });
+        setRemoteLocked((current) => {
+          const next = { ...current };
+          for (const [memberId, status] of Object.entries(data.signatures!)) {
+            if (status === 'accepted') next[memberId] = true;
+          }
+          return next;
+        });
+      } catch {
+        /* soft-fail polling */
+      }
+    };
+
+    void sync();
+    const timer = window.setInterval(sync, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [id]);
+
   const allSigned = members.every((member) => memberSignatures[member.id]);
 
   const handleToggle = (memberId: string) => {
+    if (remoteLocked[memberId]) return;
     setMemberSignatures((current) => ({
       ...current,
       [memberId]: !current[memberId],
@@ -112,6 +161,10 @@ export const GuaranteeForm: FC<GuaranteeFormProps> = ({ id, groupName, members }
                 (vi) We shall not be eligible for additional loans until the amount in default has
                 been cleared in full.
               </li>
+              <li>
+                (vii) Consent that the Fund may share our data for credit referencing as may be
+                applicable.
+              </li>
             </ol>
           </div>
 
@@ -153,6 +206,7 @@ export const GuaranteeForm: FC<GuaranteeFormProps> = ({ id, groupName, members }
                           <SignatureToggle
                             checked={!!memberSignatures[member.id]}
                             onChange={() => handleToggle(member.id)}
+                            disabled={!!remoteLocked[member.id]}
                           />
                           {memberSignatures[member.id] ? (
                             <input type="hidden" name={`signature_${member.id}`} value="on" />
@@ -183,7 +237,8 @@ export const GuaranteeForm: FC<GuaranteeFormProps> = ({ id, groupName, members }
               {isRequesting ? 'Requesting...' : requestLabel}
             </Button>
             <p className="typo-body-medium max-w-md text-center text-neutral-600 sm:text-left">
-              Click to request fellow members to consent to the loan application.
+              Sends a consent link via email, Uwezo App, and SMS. Members open the link, review
+              the terms, and tap “I consent” (or Decline) once. Consents auto-turn Signed on.
             </p>
           </div>
 

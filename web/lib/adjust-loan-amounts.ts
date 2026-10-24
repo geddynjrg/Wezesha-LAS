@@ -2,7 +2,7 @@ export const MAX_GROUP_MEMBER_LOAN_TOTAL = 500_000;
 /** Equal share cap: floor(500_000 / 3) — matches minimum group size of 3. */
 export const MAX_MEMBER_LOAN_AMOUNT = Math.floor(MAX_GROUP_MEMBER_LOAN_TOTAL / 3);
 export const MAX_MEMBER_LOAN_AMOUNT_MESSAGE = `Maximum allowed is ${MAX_MEMBER_LOAN_AMOUNT}`;
-export const MAX_GROUP_LOAN_TOTAL_MESSAGE = `Total loan amount across all members must not exceed KES ${MAX_GROUP_MEMBER_LOAN_TOTAL.toLocaleString()}`;
+export const MAX_GROUP_LOAN_TOTAL_MESSAGE = `The group total amount must not exceed KES ${MAX_GROUP_MEMBER_LOAN_TOTAL.toLocaleString()} to meet predeparture costs of the members.`;
 
 export interface LoanAmountFieldValidation {
   field: string;
@@ -20,10 +20,7 @@ export function validateGroupMemberLoanAmounts(
   const errors: LoanAmountValidationError[] = [];
   let total = 0;
 
-  for (const { field, amount } of amounts) {
-    if (amount > MAX_MEMBER_LOAN_AMOUNT) {
-      errors.push({ field, message: MAX_MEMBER_LOAN_AMOUNT_MESSAGE });
-    }
+  for (const { amount } of amounts) {
     total += amount;
   }
 
@@ -134,14 +131,10 @@ export function adjustLoanAmounts<T extends MemberWithAmount>(
     const requestedAmount = entry.requestedAmount;
 
     if (requestedAmount <= remainingAmount / remainingCount) {
-      const cappedAmount = Math.min(requestedAmount, MAX_MEMBER_LOAN_AMOUNT);
-      adjustedByIndex.set(entry.index, cappedAmount);
-      remainingAmount -= cappedAmount;
+      adjustedByIndex.set(entry.index, requestedAmount);
+      remainingAmount -= requestedAmount;
     } else {
-      const equalShare = Math.min(
-        Math.floor(remainingAmount / remainingCount),
-        MAX_MEMBER_LOAN_AMOUNT,
-      );
+      const equalShare = Math.floor(remainingAmount / remainingCount);
       adjustedByIndex.set(entry.index, equalShare);
       remainingAmount -= equalShare;
     }

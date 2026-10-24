@@ -1,7 +1,7 @@
-import { MIN_GROUP_MEMBERS } from '@/lib/constants/group-membership';
+import { MAX_GROUP_MEMBERS, MIN_GROUP_MEMBERS } from '@/lib/constants/group-membership';
 import { z } from 'zod';
 
-export { MIN_GROUP_MEMBERS };
+export { MAX_GROUP_MEMBERS, MIN_GROUP_MEMBERS };
 
 export interface MembershipCounts {
   totalMales: number;
@@ -45,6 +45,14 @@ export function createMembershipSchema(mseaTarget?: number | null) {
         ctx.addIssue({
           code: 'custom',
           message: `Group must have at least ${MIN_GROUP_MEMBERS} members.`,
+          path: ['totalFemales'],
+        });
+      }
+
+      if (enteredTotal > MAX_GROUP_MEMBERS) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Group must not have more than ${MAX_GROUP_MEMBERS} members.`,
           path: ['totalFemales'],
         });
       }

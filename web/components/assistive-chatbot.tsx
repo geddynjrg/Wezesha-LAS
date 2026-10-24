@@ -43,6 +43,8 @@ type Phase =
   | 'apply_choice'
   | 'group_list'
   | 'status_wait'
+  | 'status_choice'
+  | 'logout_confirm'
   | 'apply_docs'
   | 'stage_pick'
   | 'field_pick'
@@ -247,12 +249,25 @@ export const AssistiveChatbot: FC<{
     }) => {
       if (data.needAuth) {
         startAuthFlow();
+        if (data.reply) {
+          setMessages([
+            { role: 'assistant', content: data.reply },
+            {
+              role: 'assistant',
+              content:
+                'Welcome to the Wezesha Majuu assistant. Choose how to sign in.',
+            },
+          ]);
+        }
         return;
       }
       if (data.expectReference) setPhase('status_wait');
       if (data.expectFieldValue) setPhase('await_field');
       if (data.expectUpload) setPhase('await_upload');
       if (data.phase === 'apply_choice') setPhase('apply_choice');
+      if (data.phase === 'status_choice') setPhase('status_choice');
+      if (data.phase === 'logout_confirm') setPhase('logout_confirm');
+      if (data.phase === 'menu') setPhase('menu');
       if (data.phase === 'group_list') setPhase('group_list');
       if (data.phase === 'apply_docs') setPhase('apply_docs');
       if (data.phase === 'stage_pick') setPhase('stage_pick');
@@ -465,7 +480,7 @@ export const AssistiveChatbot: FC<{
           pushAssistant(
             setMessages,
             result.message ||
-              'OTP sent. Enter the 6-digit code (it stays masked).',
+              'OTP sent by SMS and to the Uwezo Fund app if you stayed signed in. Enter the 6-digit code (it stays masked).',
           );
           setBusy(false);
           return;
@@ -553,7 +568,25 @@ export const AssistiveChatbot: FC<{
           return;
         }
 
-        if (phase === 'status_wait') {
+        if (phase === 'logout_confirm') {
+          const yes = /^(logout_yes|yes)$/i.test(trimmed);
+          const no = /^(logout_no|no)$/i.test(trimmed);
+          if (yes || no) {
+            const data = await postChat({
+              action: yes ? 'logout_yes' : 'logout_no',
+              message: trimmed,
+            });
+            applyServerPayload(data);
+            setBusy(false);
+            return;
+          }
+        }
+
+        if (
+          phase === 'status_wait' &&
+          !trimmed.includes(':') &&
+          !/^(menu|status_group|status_individual|logout|logout_yes|logout_no)$/i.test(trimmed)
+        ) {
           const data = await postChat({
             action: 'status',
             reference: trimmed,
@@ -615,15 +648,24 @@ export const AssistiveChatbot: FC<{
           return;
         }
 
-        if (/^(apply|1)$/i.test(trimmed) || (phase === 'menu' && trimmed === 'apply')) {
+        if (
+          phase !== 'apply_choice' &&
+          phase !== 'status_choice' &&
+          phase !== 'logout_confirm' &&
+          (/^(apply|1)$/i.test(trimmed) || (phase === 'menu' && trimmed === 'apply'))
+        ) {
           const data = await postChat({ action: 'apply', message: trimmed });
           applyServerPayload(data);
           setBusy(false);
           return;
         }
 
-        if (/^(status|2)$/i.test(trimmed)) {
-          setPhase('status_wait');
+        if (
+          phase !== 'apply_choice' &&
+          phase !== 'status_choice' &&
+          phase !== 'logout_confirm' &&
+          /^(status|2)$/i.test(trimmed)
+        ) {
           const data = await postChat({ action: 'status', message: 'status' });
           applyServerPayload(data);
           setBusy(false);
@@ -631,12 +673,24 @@ export const AssistiveChatbot: FC<{
         }
 
         if (
-          phase === 'apply_choice' &&
-          (/^individual$/i.test(trimmed) || trimmed.startsWith('1'))
+          (phase === 'apply_choice' || phase === 'menu') &&
+          (/^apply_group$/i.test(trimmed) ||
+            (phase === 'apply_choice' && (/^group$/i.test(trimmed) || trimmed === '1')))
+        ) {
+          const data = await postChat({ action: 'apply_group', message: 'apply_group' });
+          applyServerPayload(data);
+          setBusy(false);
+          return;
+        }
+
+        if (
+          (phase === 'apply_choice' || phase === 'menu') &&
+          (/^apply_individual$/i.test(trimmed) ||
+            (phase === 'apply_choice' && (/^individual$/i.test(trimmed) || trimmed === '2')))
         ) {
           const data = await postChat({
-            action: 'individual',
-            message: 'individual',
+            action: 'apply_individual',
+            message: 'apply_individual',
           });
           applyServerPayload(data);
           setBusy(false);
@@ -644,10 +698,30 @@ export const AssistiveChatbot: FC<{
         }
 
         if (
-          phase === 'apply_choice' &&
-          (/^group$/i.test(trimmed) || trimmed.startsWith('2'))
+          /^status_group$/i.test(trimmed) ||
+          (phase === 'status_choice' && (/^group$/i.test(trimmed) || trimmed === '1'))
         ) {
-          const data = await postChat({ action: 'group', message: 'group' });
+          const data = await postChat({ action: 'status_group', message: 'status_group' });
+          applyServerPayload(data);
+          setBusy(false);
+          return;
+        }
+
+        if (
+          /^status_individual$/i.test(trimmed) ||
+          (phase === 'status_choice' && (/^individual$/i.test(trimmed) || trimmed === '2'))
+        ) {
+          const data = await postChat({
+            action: 'status_individual',
+            message: 'status_individual',
+          });
+          applyServerPayload(data);
+          setBusy(false);
+          return;
+        }
+
+        if (/^logout$/i.test(trimmed)) {
+          const data = await postChat({ action: 'logout', message: 'logout' });
           applyServerPayload(data);
           setBusy(false);
           return;
@@ -658,6 +732,13 @@ export const AssistiveChatbot: FC<{
         else if (/^group$/i.test(trimmed)) action = 'group';
         else if (/^individual$/i.test(trimmed)) action = 'individual';
         else if (/^new_group$/i.test(trimmed)) action = 'new_group';
+        else if (/^apply_group$/i.test(trimmed)) action = 'apply_group';
+        else if (/^apply_individual$/i.test(trimmed)) action = 'apply_individual';
+        else if (/^status_group$/i.test(trimmed)) action = 'status_group';
+        else if (/^status_individual$/i.test(trimmed)) action = 'status_individual';
+        else if (/^logout_yes$/i.test(trimmed)) action = 'logout_yes';
+        else if (/^logout_no$/i.test(trimmed)) action = 'logout_no';
+        else if (/^logout$/i.test(trimmed)) action = 'logout';
         else if (/^docs$/i.test(trimmed)) action = 'docs';
         else if (/^continue:/i.test(trimmed)) action = trimmed;
         else if (/^individual_continue:/i.test(trimmed)) action = trimmed;

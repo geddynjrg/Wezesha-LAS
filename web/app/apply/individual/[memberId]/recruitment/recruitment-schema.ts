@@ -29,6 +29,8 @@ export const recruitmentSchema = z.object({
       message: 'Monthly remuneration must be a positive number',
     }),
   convertedKesAmount: z.string().optional(),
+  /** Present when applicant acknowledges no NEAIMS placement was found. */
+  noPlacementAcknowledged: z.string().optional(),
 });
 
 export type RecruitmentInput = z.infer<typeof recruitmentSchema>;

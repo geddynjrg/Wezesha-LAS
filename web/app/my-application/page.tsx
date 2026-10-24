@@ -1,4 +1,5 @@
 import { IndividualApplicationCard } from '@/components/individual-application-card';
+import { nextOfferStepUrl, offerLetterAction } from '@/lib/offer-letter';
 import {
   getMatchedIndividualMemberships,
   individualMembershipUrl,
@@ -82,6 +83,10 @@ export default async function MyApplicationPage({
               groupName={member.application.groupData?.groupName}
               submitted={submitted}
               href={individualMembershipUrl(member)}
+              groupAcknowledgmentNumber={member.application.acknowledgmentNumber}
+              idNumber={member.idNo}
+              offerLetterAction={offerLetterAction(individual)}
+              offerContinueHref={individual ? nextOfferStepUrl(member.id, individual) : null}
             />
           );
         })}

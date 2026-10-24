@@ -1,4 +1,5 @@
 import { IndividualApplicationCard } from '@/components/individual-application-card';
+import { nextOfferStepUrl, offerLetterAction } from '@/lib/offer-letter';
 import { ApplicationProgressCard } from '@/components/application-progress-card';
 import { getUserGroupApplications } from '@/lib/data/applications';
 import {
@@ -191,6 +192,10 @@ export default async function DashboardPage({
                       groupName={member.application.groupData?.groupName}
                       submitted={submitted}
                       href={individualMembershipUrl(member)}
+              groupAcknowledgmentNumber={member.application.acknowledgmentNumber}
+              idNumber={member.idNo}
+              offerLetterAction={offerLetterAction(individual)}
+              offerContinueHref={individual ? nextOfferStepUrl(member.id, individual) : null}
                     />
                   );
                 })}

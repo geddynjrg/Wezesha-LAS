@@ -4,7 +4,6 @@ import { ApplyFormActionBar } from '@/components/apply-form-action-bar';
 import {
   MAX_GROUP_LOAN_TOTAL_MESSAGE,
   MAX_GROUP_MEMBER_LOAN_TOTAL,
-  MAX_MEMBER_LOAN_AMOUNT,
 } from '@/lib/adjust-loan-amounts';
 import {
   saveLoanAmountAction,
@@ -125,9 +124,8 @@ export const LoanAmountForm: FC<LoanAmountFormProps> = ({ id, members }) => {
         <FormCard title="Loan Amount Applied">
           <p className="typo-body-medium mb-6 text-neutral-700">
             Set the loan amount for each group member. Each member must consent via OTP sent to
-            their mobile phone before you can proceed. Each member may receive up to KES{' '}
-            {MAX_MEMBER_LOAN_AMOUNT.toLocaleString()}, and the group total must not exceed KES{' '}
-            {MAX_GROUP_MEMBER_LOAN_TOTAL.toLocaleString()}.
+            their mobile phone before you can proceed. The group total amount must not exceed KES{' '}
+            {MAX_GROUP_MEMBER_LOAN_TOTAL.toLocaleString()} to meet predeparture costs of the members.
           </p>
 
           <div className="space-y-6">

@@ -19,7 +19,7 @@ export function plainMajuuStatus(status: string | null | undefined): string {
 export type ChatQuickReply = { id: string; label: string; value: string };
 
 export const MAIN_MENU_REPLIES: ChatQuickReply[] = [
-  { id: 'apply', label: '1. Apply for a loan', value: 'apply' },
+  { id: 'apply', label: '1. Apply for a Loan', value: 'apply' },
   {
     id: 'status',
     label: '2. Check status of loan application',
@@ -28,17 +28,40 @@ export const MAIN_MENU_REPLIES: ChatQuickReply[] = [
   {
     id: 'new_app',
     label: '3. New application',
-    value: 'new_group',
+    value: 'apply',
   },
+  { id: 'logout', label: '4. Log out', value: 'logout' },
+];
+
+export const LOGOUT_CONFIRM_REPLIES: ChatQuickReply[] = [
+  { id: 'logout-yes', label: 'Yes', value: 'logout_yes' },
+  { id: 'logout-no', label: 'No', value: 'logout_no' },
 ];
 
 export const APPLY_TYPE_REPLIES: ChatQuickReply[] = [
   {
-    id: 'individual',
-    label: '1. Continue to Individual Application',
-    value: 'individual',
+    id: 'apply-group',
+    label: 'Apply for a loan - Group loan',
+    value: 'apply_group',
   },
-  { id: 'group', label: '2. Group Application', value: 'group' },
+  {
+    id: 'apply-individual',
+    label: 'Apply for a loan - Individual Application',
+    value: 'apply_individual',
+  },
+];
+
+export const STATUS_TYPE_REPLIES: ChatQuickReply[] = [
+  {
+    id: 'status-group',
+    label: 'Apply for a loan - Group loan',
+    value: 'status_group',
+  },
+  {
+    id: 'status-individual',
+    label: 'Apply for a loan - Individual Application',
+    value: 'status_individual',
+  },
 ];
 
 export const MAJUU_APPLY_MENU = [
@@ -46,17 +69,19 @@ export const MAJUU_APPLY_MENU = [
     id: 'apply',
     label: 'Apply for a loan',
     reply:
-      'Choose how to continue:\n' +
-      '1. Continue to Individual Application\n' +
-      '2. Group Application\n\n' +
-      'Prefer continuing an in-progress application rather than starting a new one.',
+      'New Application\n\n' +
+      '1. Apply for a loan - Group loan\n' +
+      '2. Apply for a loan - Individual Application\n\n' +
+      'The same steps apply as the existing group and individual applications. An in-progress draft is offered before a new one is started.',
   },
   {
     id: 'status',
     label: 'Check status of loan application',
     reply:
-      'Send your acknowledgment / reference number (for example UWZ-… or UWZ-…-IDNO). ' +
-      'I will look up status for applications linked to your account only.',
+      'Check status of a loan application.\n\n' +
+      '1. Apply for a loan - Group loan\n' +
+      '2. Apply for a loan - Individual Application\n\n' +
+      'Only applications of that type on your account are listed.',
   },
 ] as const;
 

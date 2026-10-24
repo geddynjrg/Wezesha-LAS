@@ -226,7 +226,16 @@ export async function getUserIndividualMemberships(userId: string) {
   const members = await prisma.groupMember.findMany({
     where: { OR: or },
     include: {
-      individualApplication: true,
+      individualApplication: {
+        include: {
+          location: true,
+          bankAccount: true,
+          recruitment: true,
+          guarantors: { select: { id: true } },
+          budgetItems: { select: { id: true } },
+          signature: true,
+        },
+      },
       application: { include: { groupData: true } },
     },
     orderBy: { updatedAt: 'desc' },
@@ -439,7 +448,11 @@ export async function getOrCreateIndividualApplication(memberId: string) {
     throw new Error('Member not found');
   }
 
-  if (member.application.status !== ApplicationStatus.GROUP_SUBMITTED) {
+  const groupStatus = member.application.status;
+  const groupReady =
+    groupStatus === ApplicationStatus.GROUP_SUBMITTED ||
+    groupStatus === ApplicationStatus.INDIVIDUAL_IN_PROGRESS;
+  if (!groupReady) {
     throw new Error('Group application must be submitted first');
   }
 

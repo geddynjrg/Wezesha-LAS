@@ -113,6 +113,42 @@ export async function POST(request: Request) {
       );
     }
 
+    if (action === 'refresh') {
+      const refreshToken = String(
+        body.refreshToken || body.refresh_token || '',
+      ).trim();
+      if (!refreshToken) {
+        return withCors(
+          request,
+          NextResponse.json(
+            { ok: false, error: 'refreshToken is required.' },
+            { status: 400 },
+          ),
+        );
+      }
+      const { verifyRefreshToken } = await import('@/lib/auth/jwt');
+      const { issueTokensForUser } = await import('@/lib/auth/session');
+      const verified = await verifyRefreshToken(refreshToken);
+      if (!verified?.userId) {
+        return withCors(
+          request,
+          NextResponse.json(
+            { ok: false, error: 'Session could not be renewed. Stay in the app and scan again.' },
+            { status: 401 },
+          ),
+        );
+      }
+      const tokens = await issueTokensForUser(verified.userId);
+      return withCors(
+        request,
+        NextResponse.json({
+          ok: true,
+          ...tokens,
+          message: 'Session renewed.',
+        }),
+      );
+    }
+
     if (action === 'reset_request') {
       if (!email) {
         return withCors(

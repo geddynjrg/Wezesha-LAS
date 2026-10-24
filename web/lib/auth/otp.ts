@@ -4,7 +4,7 @@ import {
 } from '@/lib/auth/jwt';
 import { issueTokensForUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
-import { normalizeKenyanPhoneForApi } from '@/lib/phone/kenyan-phone';
+import { formatKenyanPhoneForApi, kenyanPhoneLookupVariants, normalizeKenyanPhoneForApi } from '@/lib/phone/kenyan-phone';
 import {
   generateOtpCode,
   sendSms,
@@ -266,17 +266,177 @@ export async function verifyLoginOtp(requestId: string, otpCode: string) {
     throw new Error('Invalid or expired OTP code');
   }
 
-  const user = await prisma.user.upsert({
-    where: { phoneNumber: otpRequest.phoneNumber },
-    update: { identifierType: IdentifierType.PHONE },
-    create: {
-      phoneNumber: otpRequest.phoneNumber,
-      identifierType: IdentifierType.PHONE,
-    },
-  });
+  const variants = kenyanPhoneLookupVariants(otpRequest.phoneNumber);
+  const matches = variants.length
+    ? await prisma.user.findMany({ where: { OR: variants.map((phoneNumber) => ({ phoneNumber })) } })
+    : [];
+  const user =
+    matches.sort((a, b) => {
+      const score = (row: { passwordHash?: string | null; email?: string | null; idNumber?: string | null; name?: string | null }) =>
+        (row.passwordHash ? 8 : 0) + (row.email ? 4 : 0) + (row.idNumber ? 2 : 0) + (row.name ? 1 : 0);
+      return score(b) - score(a);
+    })[0] ||
+    (await prisma.user.create({
+      data: {
+        phoneNumber: formatKenyanPhoneForApi(otpRequest.phoneNumber) || otpRequest.phoneNumber,
+        identifierType: IdentifierType.PHONE,
+      },
+    }));
 
   await prisma.otpRequest.delete({ where: { id: otpRequest.id } });
 
   const tokens = await issueTokensForUser(user.id);
   return tokens;
+}
+
+
+export type ContactConfirmationResult = {
+  emailRequestId: string;
+  phoneRequestId: string;
+  phoneChannel: 'sms' | 'email';
+  maskedEmail: string;
+  message: string;
+};
+
+/**
+ * Separate codes for an email and a phone that is not the number on this SIM.
+ * If SMS fails, the phone code is emailed so both can still be confirmed.
+ */
+export async function requestContactConfirmation(
+  emailRaw: string,
+  phoneRaw: string,
+): Promise<ContactConfirmationResult> {
+  const email = normalizeEmail(emailRaw);
+  if (!email) {
+    throw new OtpDeliveryError('Enter a valid email address.');
+  }
+  const phoneNumber = normalizeKenyanPhoneForApi(phoneRaw);
+  if (!phoneNumber) {
+    throw new OtpDeliveryError('Enter a valid phone number.');
+  }
+
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const recentCount = await prisma.otpRequest.count({
+    where: { phoneNumber, createdAt: { gte: oneHourAgo } },
+  });
+  if (recentCount + 2 > MAX_REQUESTS_PER_HOUR) {
+    throw new OtpDeliveryError('Too many OTP requests. Please try again later.');
+  }
+
+  let emailCode = generateOtpCode();
+  let phoneCode = generateOtpCode();
+  if (phoneCode === emailCode) {
+    phoneCode = generateOtpCode();
+  }
+  const emailRequestId = generateRequestId();
+  const phoneRequestId = generateRequestId();
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000);
+
+  await prisma.otpRequest.createMany({
+    data: [
+      {
+        requestId: emailRequestId,
+        phoneNumber,
+        otpHash: hashOtpCode(emailCode),
+        expiresAt,
+      },
+      {
+        requestId: phoneRequestId,
+        phoneNumber,
+        otpHash: hashOtpCode(phoneCode),
+        expiresAt,
+      },
+    ],
+  });
+
+  const emailMail = await sendPlainEmail({
+    to: email,
+    subject: 'Confirm your email for Uwezo Fund',
+    text:
+      `Your email confirmation code is: ${emailCode}\n\n` +
+      `It expires in 5 minutes.\n` +
+      `If you did not try to register, you can ignore this email.`,
+  });
+  if (!emailMail.success) {
+    await prisma.otpRequest.deleteMany({
+      where: { requestId: { in: [emailRequestId, phoneRequestId] } },
+    });
+    throw new OtpDeliveryError('The email confirmation code could not be sent. Try again.');
+  }
+
+  const smsResult = await sendSms(
+    phoneNumber,
+    `Your Uwezo Fund phone confirmation code is: ${phoneCode}`,
+  );
+  let phoneChannel: 'sms' | 'email' = 'sms';
+  if (!smsResult.success) {
+    phoneChannel = 'email';
+    const phoneMail = await sendPlainEmail({
+      to: email,
+      subject: 'Confirm your phone number for Uwezo Fund',
+      text:
+        `We could not send an SMS to ${phoneNumber}.\n\n` +
+        `Your phone confirmation code is: ${phoneCode}\n\n` +
+        `Enter it with the separate email confirmation code. It expires in 5 minutes.`,
+    });
+    if (!phoneMail.success) {
+      await prisma.otpRequest.deleteMany({
+        where: { requestId: { in: [emailRequestId, phoneRequestId] } },
+      });
+      throw new OtpDeliveryError(
+        'SMS is unavailable and the phone confirmation code could not be emailed. Try again.',
+      );
+    }
+  }
+
+  const masked = maskEmail(email);
+  const message =
+    phoneChannel === 'sms'
+      ? `Enter the email code sent to ${masked} and the phone code sent by SMS.`
+      : `SMS is unavailable. Enter the email code and the phone code; both were sent to ${masked}.`;
+
+  return {
+    emailRequestId,
+    phoneRequestId,
+    phoneChannel,
+    maskedEmail: masked,
+    message,
+  };
+}
+
+export async function confirmContactCodes(input: {
+  emailRequestId: string;
+  emailCode: string;
+  phoneRequestId: string;
+  phoneCode: string;
+}): Promise<void> {
+  const emailId = await matchOtpCode(
+    input.emailRequestId,
+    input.emailCode,
+    'Email confirmation code is not valid.',
+  );
+  const phoneId = await matchOtpCode(
+    input.phoneRequestId,
+    input.phoneCode,
+    'Phone confirmation code is not valid.',
+  );
+  await prisma.otpRequest.deleteMany({ where: { id: { in: [emailId, phoneId] } } });
+}
+
+async function matchOtpCode(requestId: string, otpCode: string, invalidMessage: string) {
+  const otpRequest = await prisma.otpRequest.findUnique({ where: { requestId } });
+  if (!otpRequest || otpRequest.expiresAt < new Date()) {
+    throw new Error(invalidMessage);
+  }
+  if (otpRequest.attempts >= MAX_OTP_ATTEMPTS) {
+    throw new Error('Too many verification attempts. Please try again later.');
+  }
+  if (otpRequest.otpHash !== hashOtpCode(otpCode.trim())) {
+    await prisma.otpRequest.update({
+      where: { id: otpRequest.id },
+      data: { attempts: { increment: 1 } },
+    });
+    throw new Error(invalidMessage);
+  }
+  return otpRequest.id;
 }

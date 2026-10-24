@@ -1,5 +1,6 @@
-/** Kenyan mobile operator prefixes (Safaricom, Airtel, Telkom). */
+/** Kenyan mobile operator prefixes (Safaricom, Airtel, Telkom, etc.). */
 const KENYAN_MOBILE_PREFIXES = new Set([
+  // 07X…
   '070',
   '071',
   '072',
@@ -10,9 +11,17 @@ const KENYAN_MOBILE_PREFIXES = new Set([
   '077',
   '078',
   '079',
+  // 01X… (Airtel and other assigned ranges)
   '010',
   '011',
   '012',
+  '013',
+  '014',
+  '015',
+  '016',
+  '017',
+  '018',
+  '019',
 ]);
 
 /** Normalize to 254XXXXXXXXX for SMS API and database storage. */
@@ -30,7 +39,7 @@ export function normalizeKenyanPhoneForApi(phone: string): string {
   return digits;
 }
 
-/** Format for user-friendly local display: 07XX XXX XXX */
+/** Format for user-friendly local display: 07XX XXX XXX or 01XX XXX XXX */
 export function formatKenyanPhoneForDisplay(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   let local = '';
@@ -59,6 +68,13 @@ export function isValidKenyanMobile(phone: string): boolean {
 
   const localPrefix = `0${normalized.slice(3, 5)}`;
   return KENYAN_MOBILE_PREFIXES.has(localPrefix);
+}
+
+/** +2547…, 2547…, 07…, and the 9-digit local form of the same line. */
+export function kenyanPhoneLookupVariants(phone: string | null | undefined): string[] {
+  const local = normalizeKenyanPhoneLocal(phone);
+  if (!local) return [];
+  return Array.from(new Set([local, `0${local}`, `254${local}`, `+254${local}`]));
 }
 
 export function digitsFromKenyanPhoneInput(value: string): string {

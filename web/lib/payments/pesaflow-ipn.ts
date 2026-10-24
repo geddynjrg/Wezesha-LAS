@@ -19,8 +19,7 @@ import type {
   PesaflowIpnPayload,
   ProcessPaymentResult,
 } from '@/lib/payments/pesaflow.types';
-import { sendSms } from '@/lib/sms/sms.service';
-import { sendPlainEmail } from '@/lib/email/mail.service';
+import { notifyApplicationStatusChannels } from '@/lib/notify/notify-application-status';
 import { prisma } from '@/lib/prisma';
 
 function parseAmount(value: unknown): number | null {
@@ -105,19 +104,20 @@ async function notifyApplicantOfSuccessfulPayment(
   });
   const message = `Dear ${app.member.name}, Uwezo Fund received your Wezesha Majuu payment of KES ${amountLabel}. Ref: ${billRefNumber}.`;
 
-  const smsResult = await sendSms(app.member.mobile, message);
-  if (smsResult.success) {
+  const result = await notifyApplicationStatusChannels({
+    recipient: {
+      name: app.member.name,
+      phone: app.member.mobile,
+      email: app.member.email,
+    },
+    title: 'Wezesha Majuu payment received',
+    emailSubject: 'Wezesha Majuu payment received',
+    message,
+  });
+  if (result.sms) {
     await markPaymentSmsSent(billRefNumber);
   } else {
     console.warn('[Pesaflow IPN] Applicant SMS failed');
-  }
-
-  if (app.member.email) {
-    await sendPlainEmail({
-      to: app.member.email,
-      subject: 'Wezesha Majuu payment received',
-      text: message,
-    });
   }
 }
 

@@ -18,7 +18,11 @@ type RecentPayment = {
 
 type PesaflowPayPanelProps = {
   memberId: string;
+  /** Maximum payable amount = outstanding arrears. */
   amount: number;
+  loaned?: number;
+  repaid?: number;
+  arrears?: number;
   configured: boolean;
   eligible: boolean;
   reason: string | null;
@@ -35,22 +39,56 @@ function formatKes(value: number) {
 export function PesaflowPayPanel({
   memberId,
   amount,
+  loaned,
+  repaid,
+  arrears,
   configured,
   eligible,
   reason,
   recent,
 }: PesaflowPayPanelProps) {
+  const maxPayable = Math.max(0, arrears ?? amount);
+  const loanedAmount = loaned ?? amount;
+  const repaidAmount = repaid ?? Math.max(0, loanedAmount - maxPayable);
+
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [invoiceLink, setInvoiceLink] = useState<string | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | undefined>();
   const [fields, setFields] = useState<Record<string, string> | undefined>();
   const [billRef, setBillRef] = useState<string | null>(null);
+  const [payAmount, setPayAmount] = useState(
+    String(maxPayable > 0 ? Math.round(maxPayable) : ''),
+  );
+
+  const selectedAmount = () => {
+    const value = Number(payAmount);
+    if (!Number.isFinite(value) || value <= 0) return null;
+    if (value > maxPayable + 0.001) return null;
+    return Math.round(value * 100) / 100;
+  };
+
+  const clearCheckout = () => {
+    setInvoiceLink(null);
+    setCheckoutUrl(undefined);
+    setFields(undefined);
+    setBillRef(null);
+  };
 
   const handleGenerate = () => {
+    const invoiceAmount = selectedAmount();
+    if (invoiceAmount == null) {
+      setError(
+        maxPayable <= 0
+          ? 'No arrears outstanding on this loan.'
+          : `Enter an amount from KES 1.00 up to your arrears of KES ${formatKes(maxPayable)}.`,
+      );
+      clearCheckout();
+      return;
+    }
     setError(null);
     startTransition(async () => {
-      const result = await initiatePesaflowInvoice({ memberId, amount });
+      const result = await initiatePesaflowInvoice({ memberId, amount: invoiceAmount });
       if (!result.success) {
         setError(
           result.error ??
@@ -78,16 +116,47 @@ export function PesaflowPayPanel({
         </p>
       </div>
 
+      <dl className="grid gap-2 rounded-lg bg-neutral-50 p-3 text-sm sm:grid-cols-3">
+        <div>
+          <dt className="text-neutral-600">Amount loaned</dt>
+          <dd className="font-medium">KES {formatKes(loanedAmount)}</dd>
+        </div>
+        <div>
+          <dt className="text-neutral-600">Cumulative repayments</dt>
+          <dd className="font-medium">KES {formatKes(repaidAmount)}</dd>
+        </div>
+        <div>
+          <dt className="text-neutral-600">Arrears</dt>
+          <dd className="font-medium text-amber-900">KES {formatKes(maxPayable)}</dd>
+        </div>
+      </dl>
+
       {!eligible ? (
         <p className="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
           {reason ?? 'Payment is not available for this application yet.'}
         </p>
       ) : (
         <>
-          <p className="text-sm text-neutral-700">
-            Invoice amount:{' '}
-            <span className="font-semibold">KES {formatKes(amount)}</span>
-          </p>
+          <label className="block space-y-1 text-sm text-neutral-700">
+            <span>Amount to repay (KES)</span>
+            <input
+              type="number"
+              min={1}
+              max={maxPayable}
+              step={1}
+              inputMode="decimal"
+              value={payAmount}
+              onChange={(event) => {
+                setPayAmount(event.target.value);
+                clearCheckout();
+                setError(null);
+              }}
+              className="w-full max-w-xs rounded-lg border border-neutral-300 px-3 py-2 text-base text-neutral-900"
+            />
+            <span className="block text-neutral-600">
+              You can repay any amount up to your arrears: KES {formatKes(maxPayable)}.
+            </span>
+          </label>
 
           {!configured ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -100,7 +169,7 @@ export function PesaflowPayPanel({
             <Button
               type="button"
               onClick={handleGenerate}
-              disabled={pending || !configured}
+              disabled={pending || !configured || maxPayable <= 0}
             >
               {pending ? 'Generating invoice…' : 'Pay with PesaFlow'}
             </Button>
@@ -108,7 +177,7 @@ export function PesaflowPayPanel({
               type="button"
               variant="secondary"
               onClick={handleGenerate}
-              disabled={pending || !configured}
+              disabled={pending || !configured || maxPayable <= 0}
             >
               Generate invoice
             </Button>

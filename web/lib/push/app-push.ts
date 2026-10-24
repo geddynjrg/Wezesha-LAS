@@ -90,13 +90,14 @@ function persistToDisk() {
   }
 }
 
-/** Canonical Kenyan mobile digits: 2547XXXXXXXX */
+/** Canonical Kenyan mobile digits: 2547XXXXXXXX or 2541XXXXXXXX */
 export function kenyanMsisdnDigits(raw?: string): string {
   if (!raw) return '';
   let d = raw.replace(/\D/g, '');
   if (d.startsWith('2540') && d.length === 13) d = `254${d.slice(4)}`;
   if (d.startsWith('0') && d.length === 10) d = `254${d.slice(1)}`;
-  if (d.length === 9 && d.startsWith('7')) d = `254${d}`;
+  // Local 9-digit numbers starting with 7 (07…) or 1 (01…)
+  if (d.length === 9 && /^[17]/.test(d)) d = `254${d}`;
   return d;
 }
 

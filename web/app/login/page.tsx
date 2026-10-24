@@ -90,6 +90,14 @@ export default async function LoginPage({
               <p className="typo-body-medium">{t('roleStepDescription')}</p>
             </>
           )}
+          <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+            <p className="text-sm font-semibold text-neutral-800">{t('processTitle')}</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-neutral-700">
+              <li>{t('processOne')}</li>
+              <li>{t('processTwo')}</li>
+              <li>{t('processThree')}</li>
+            </ul>
+          </div>
         </header>
 
         {!selectedRole ? (

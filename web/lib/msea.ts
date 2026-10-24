@@ -84,6 +84,18 @@ export function findMseaChairPartners(partners: MseaPartner[]): MseaPartner[] {
   return (partners || []).filter(isMseaChairPartner);
 }
 
+/**
+ * Strip all whitespace (leading, trailing, and within) and uppercase.
+ * e.g. "RA- 77SR67" → "RA-77SR67", " ASS RA-X " → "ASSRA-X"
+ */
+export function normalizeMseaRegistrationNumber(registrationNumber: string): string {
+  // Remove all whitespace (leading/trailing/within), e.g. "RA- 77SR67" → "RA-77SR67"
+  let cleaned = `${registrationNumber || ''}`.replace(/\s+/g, '').toUpperCase();
+  // MSEA stores bare RA-/WYG- numbers — "ASS RA-…" / "ASS-RA-…" must become "RA-…"
+  cleaned = cleaned.replace(/^ASS-?/, '');
+  return cleaned;
+}
+
 interface MseaBusinessRecord {
   business_name?: string;
   registration_number?: string;
@@ -155,7 +167,7 @@ export async function lookupMseaBusiness(registrationNumber: string): Promise<{
     return null;
   }
 
-  const trimmed = registrationNumber.trim().toUpperCase();
+  const trimmed = normalizeMseaRegistrationNumber(registrationNumber);
   if (!trimmed) {
     return null;
   }
@@ -199,7 +211,9 @@ export async function lookupMseaBusiness(registrationNumber: string): Promise<{
       partners,
       totalMembers: partners.length,
       business_name: record.business_name,
-      registration_number: record.registration_number || trimmed,
+      registration_number: normalizeMseaRegistrationNumber(
+        record.registration_number || trimmed,
+      ),
       registration_date: record.registration_date,
     };
   } catch {

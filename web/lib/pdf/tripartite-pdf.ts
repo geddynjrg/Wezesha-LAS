@@ -31,9 +31,9 @@ const LABOUR_ITEMS = [
 
 const MSME_ITEMS = [
   'Allocate the budget for the Labour Mobility Loan.',
+  'Cluster and register the groups accordingly in order to access funding.',
   'Receive and process loan applications.',
   'Disburse approved loans to individual members within the clusters.',
-  'In liaison with MSEA, cluster the groups accordingly in order to access funding.',
   'Structure loan repayment plan and commit prospective migrant workers in liaison with the Ministry of Labour and Social Protection.',
   'Track and report on the program performance, document and share success stories of beneficiaries.',
 ];

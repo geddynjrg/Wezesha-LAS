@@ -101,16 +101,36 @@ export function getIndividualInformationMemberDefaults(member: {
 export const individualInformationSchema = z
   .object({
     gender: z.enum(GENDER_OPTIONS, { message: 'Gender is required' }),
-    dob: z.string().optional(),
-    kraPin: z.string().optional(),
+    dob: z.string().min(1, 'Date of birth is required'),
+    kraPin: z.string().min(1, 'KRA PIN is required'),
     educationLevel: z.enum(EDUCATION_LEVEL_OPTIONS, {
       message: 'Education level is required',
     }),
     educationLevelOther: z.string().optional(),
-    poBox: z.string().optional(),
-    postalCode: z.string().optional(),
-    town: z.string().optional(),
-    dependants: z.coerce.number().optional(),
+    poBox: z.string().min(1, 'P.O. Box is required'),
+    postalCode: z.string().min(1, 'Postal code is required'),
+    town: z.string().min(1, 'Town is required'),
+    dependants: z
+      .union([z.string(), z.number()])
+      .transform((value, ctx) => {
+        if (value === '' || value == null) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Dependants is required',
+          });
+          return z.NEVER;
+        }
+        const n = typeof value === 'number' ? value : Number(String(value).trim());
+        if (Number.isNaN(n)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Dependants is required',
+          });
+          return z.NEVER;
+        }
+        return n;
+      })
+      .pipe(z.number().int().min(0, 'Dependants must be 0 or more')),
   })
   .superRefine((data, ctx) => {
     if (data.educationLevel === 'Other' && !data.educationLevelOther?.trim()) {
@@ -121,8 +141,8 @@ export const individualInformationSchema = z
       });
     }
 
-    const dob = data.dob?.trim();
-    if (dob && !isAtLeastMinApplicantAge(dob)) {
+    const dob = data.dob.trim();
+    if (!isAtLeastMinApplicantAge(dob)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: DOB_BELOW_MIN_AGE_MESSAGE,

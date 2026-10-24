@@ -4,6 +4,7 @@ import { assertGroupChairAccess } from '@/lib/group-application-access';
 import { parseMemberDetailsForm } from '@/app/apply/group/[id]/member-details/member-details-schema';
 import { MIN_GROUP_MEMBERS } from '@/lib/constants/group-membership';
 import { updateGroupProgress } from '@/lib/data/applications';
+import { unplacedJobseekers } from '@/lib/neaims-placement-gate';
 import { resolveFormData } from '@/lib/resolve-form-data';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma';
@@ -34,8 +35,8 @@ function duplicateNationalIdErrors(
 
     const firstIndex = seen.get(idNo);
     if (firstIndex != null) {
-      errors[`idNo_${index}`] = ['Duplicate National ID.'];
-      errors[`idNo_${firstIndex}`] = ['Duplicate National ID.'];
+      errors[`idNo_${index}`] = ['Each member must have a unique National ID.'];
+      errors[`idNo_${firstIndex}`] = ['Each member must have a unique National ID.'];
       continue;
     }
 
@@ -53,7 +54,6 @@ async function persistMembers(
     mobile: string;
     email: string;
     passportNo: string;
-    purpose: string;
     amount: number;
   }>,
 ) {
@@ -69,7 +69,6 @@ async function persistMembers(
           mobile: member.mobile.trim(),
           email: member.email?.trim() || null,
           passportNo: member.passportNo?.trim() || null,
-          purpose: member.purpose?.trim() || null,
           amount: member.amount,
         },
       });
@@ -126,6 +125,30 @@ export async function saveMemberDetailsAction(
         success: false as const,
         errors: duplicateErrors,
         values: formValues,
+      };
+    }
+
+    const unplaced = await unplacedJobseekers(
+      parsed.data.map((member) => ({
+        nationalId: member.idNo,
+        name: member.name,
+      })),
+    );
+    if (unplaced.length > 0) {
+      const errors: Record<string, string[]> = {};
+      for (const miss of unplaced) {
+        const index = parsed.data.findIndex(
+          (member) => member.idNo.trim() === miss.nationalId,
+        );
+        const key = index >= 0 ? `idNo_${index}` : 'memberCount';
+        errors[key] = [miss.detail];
+      }
+      return {
+        success: false as const,
+        errors,
+        values: formValues,
+        message:
+          'A job placement must exist for every job seeker before the group application can continue.',
       };
     }
 

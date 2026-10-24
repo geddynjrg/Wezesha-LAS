@@ -357,11 +357,11 @@ export const TripartiteAgreementDocument: FC<TripartiteAgreementDocumentProps> =
       </p>
       <ol className="list-roman mb-4 list-[lower-roman] pl-10">
         <li className="mb-2">Allocate the budget for the Labour Mobility Loan.</li>
+        <li className="mb-2">
+          Cluster and register the groups accordingly in order to access funding.
+        </li>
         <li className="mb-2">Receive and process loan applications.</li>
         <li className="mb-2">Disburse approved loans to individual members within the clusters.</li>
-        <li className="mb-2">
-          In liaison with MSEA, cluster the groups accordingly in order to access funding.
-        </li>
         <li className="mb-2">
           Structure loan repayment plan and commit prospective migrant workers in liaison with the
           Ministry of Labour and Social Protection.

@@ -1,8 +1,10 @@
 import { answerAssistiveChat } from '@/lib/assistive-chatbot-faq';
 import {
   APPLY_TYPE_REPLIES,
+  LOGOUT_CONFIRM_REPLIES,
   MAIN_MENU_REPLIES,
   MAJUU_APPLY_MENU,
+  STATUS_TYPE_REPLIES,
   plainMajuuStatus,
   type ChatQuickReply,
 } from '@/lib/assistive-chat-guidance';
@@ -15,7 +17,7 @@ import {
   getGroupApplicationUrl,
   getGroupProgressLabel,
 } from '@/lib/constants/majuu-steps';
-import { getSessionUserId } from '@/lib/auth/session';
+import { getSessionUserId, invalidateSession } from '@/lib/auth/session';
 import {
   beginFieldEdit,
   groupFieldPicker,
@@ -68,6 +70,7 @@ type StatusResult = {
 async function listApplicationsForUser(
   userId: string,
   mode: 'status' | 'continue' = 'status',
+  scope: 'all' | 'group' | 'individual' = 'all',
 ): Promise<StatusResult> {
   const [groups, memberships] = await Promise.all([
     getUserGroupApplications(userId),
@@ -77,7 +80,7 @@ async function listApplicationsForUser(
   const quickReplies: ChatQuickReply[] = [];
   let n = 0;
 
-  for (const g of groups.slice(0, 6)) {
+  if (scope !== 'individual') for (const g of groups.slice(0, 6)) {
     const inProgress = g.status === 'DRAFT' || g.progress < 9;
     const label = groupChipLabel(g, n);
     n += 1;
@@ -96,7 +99,7 @@ async function listApplicationsForUser(
     }
   }
 
-  for (const m of memberships.slice(0, 6)) {
+  if (scope !== 'group') for (const m of memberships.slice(0, 6)) {
     const ind = m.individualApplication;
     if (!ind?.acknowledgmentNumber) continue;
     const groupName =
@@ -120,9 +123,14 @@ async function listApplicationsForUser(
   }
 
   if (!quickReplies.length) {
+    const empty =
+      scope === 'group'
+        ? 'No group loan applications found on your account yet.'
+        : scope === 'individual'
+          ? 'No individual applications found on your account yet.'
+          : 'No applications found on your account yet. Choose Apply for a loan to start.';
     return {
-      reply:
-        'No applications found on your account yet. Choose Apply for a loan to start.',
+      reply: empty,
       quickReplies: MAIN_MENU_REPLIES,
     };
   }
@@ -422,6 +430,60 @@ export async function POST(request: Request) {
     });
   }
 
+  if (action === 'logout' || /^logout$/i.test(trimmed)) {
+    if (!userId) {
+      return NextResponse.json({
+        reply: 'You are not signed in.',
+        needAuth: true,
+      });
+    }
+    return NextResponse.json({
+      reply: 'Log out of the Wezesha Majuu assistant?',
+      quickReplies: LOGOUT_CONFIRM_REPLIES,
+      authenticated: true,
+      phase: 'logout_confirm',
+    });
+  }
+
+  if (action === 'logout_yes' || /^logout_yes$/i.test(trimmed)) {
+    await invalidateSession();
+    return NextResponse.json({
+      reply: 'You have been signed out.',
+      needAuth: true,
+    });
+  }
+
+  if (action === 'logout_no' || /^logout_no$/i.test(trimmed)) {
+    if (!userId) {
+      return NextResponse.json({
+        reply: 'Please sign in first.',
+        needAuth: true,
+      });
+    }
+    return NextResponse.json({
+      reply: 'Signed in successfully.\nWhat would you like to do?',
+      quickReplies: MAIN_MENU_REPLIES,
+      authenticated: true,
+      phase: 'menu',
+    });
+  }
+
+  if (action === 'status_group' || action === 'status_individual') {
+    if (!userId) {
+      return NextResponse.json({
+        reply: 'Sign in first to check application status on your account.',
+        needAuth: true,
+      });
+    }
+    const scope = action === 'status_group' ? 'group' : 'individual';
+    const listed = await listApplicationsForUser(userId, 'status', scope);
+    return NextResponse.json({
+      ...listed,
+      source: action,
+      authenticated: true,
+    });
+  }
+
   if (
     action === 'status' ||
     /^status$/i.test(trimmed) ||
@@ -440,12 +502,12 @@ export async function POST(request: Request) {
     if (!ref) {
       return NextResponse.json({
         reply: MAJUU_APPLY_MENU[1].reply,
-        expectReference: true,
         quickReplies: [
-          { id: 'list', label: 'List my applications', value: 'list' },
+          ...STATUS_TYPE_REPLIES,
           { id: 'menu', label: 'Back to menu', value: 'menu' },
         ],
         authenticated: true,
+        phase: 'status_choice',
       });
     }
     const result = await statusForUser(userId, ref);
@@ -475,6 +537,7 @@ export async function POST(request: Request) {
   }
 
   if (
+    action === 'apply_group' ||
     action === 'group' ||
     action === 'group_list' ||
     /^group$/i.test(trimmed)
@@ -491,7 +554,11 @@ export async function POST(request: Request) {
     });
   }
 
-  if (action === 'individual' || /^individual$/i.test(trimmed)) {
+  if (
+    action === 'apply_individual' ||
+    action === 'individual' ||
+    /^individual$/i.test(trimmed)
+  ) {
     if (!userId) {
       return NextResponse.json({ reply: 'Sign in first.', needAuth: true });
     }

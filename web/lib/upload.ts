@@ -12,6 +12,7 @@ export type UploadCategory =
   | 'member-id'
   | 'member-passport'
   | 'member-kra'
+  | 'passport-biodata'
   | 'individual-document';
 
 export async function saveUploadedFile(

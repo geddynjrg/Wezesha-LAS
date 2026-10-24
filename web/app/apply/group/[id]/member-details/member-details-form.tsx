@@ -4,10 +4,7 @@ import { ApplyFormActionBar } from '@/components/apply-form-action-bar';
 import { FieldGuidance } from '@/components/field-guidance';
 import { FormField } from '@/components/form-field';
 import { SoftDuplicateBanner } from '@/components/soft-duplicate-banner';
-import {
-  MAX_GROUP_MEMBER_LOAN_TOTAL,
-  MAX_MEMBER_LOAN_AMOUNT,
-} from '@/lib/adjust-loan-amounts';
+import { MAX_GROUP_MEMBER_LOAN_TOTAL } from '@/lib/adjust-loan-amounts';
 import { createMemberDetailsSchema } from './member-details-schema';
 import { saveMemberDetailsAction } from './member-details-action';
 import type { ClientMemberRow } from '@/lib/serialize-for-client';
@@ -15,7 +12,9 @@ import { Container } from '@workspace/ui/components/container';
 import { Form } from '@workspace/ui/components/form';
 import { FormCard } from '@workspace/ui/components/uwezo/form-card';
 import { useForm } from '@workspace/ui/hooks/use-form';
-import { type FC, useCallback, useMemo, useState } from 'react';
+import { MemberPassportAutofill } from '@/components/member-passport-autofill';
+import { MemberPlacementNotice } from '@/components/member-placement-notice';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 
 interface MemberDetailsFormProps {
   id: string;
@@ -45,7 +44,6 @@ export const MemberDetailsForm: FC<MemberDetailsFormProps> = ({
       values[`mobile_${index}`] = member.mobile;
       values[`email_${index}`] = member.email;
       values[`passportNo_${index}`] = member.passportNo;
-      values[`purpose_${index}`] = member.purpose;
       values[`amount_${index}`] = member.amount;
     });
 
@@ -64,6 +62,13 @@ export const MemberDetailsForm: FC<MemberDetailsFormProps> = ({
   const [softAck, setSoftAck] = useState(false);
   const [softActive, setSoftActive] = useState(false);
   const [hasSoftDuplicate, setHasSoftDuplicate] = useState(false);
+  const [idNos, setIdNos] = useState<string[]>(() =>
+    members.map((member) => member.idNo ?? ''),
+  );
+
+  useEffect(() => {
+    setIdNos(members.map((member) => member.idNo ?? ''));
+  }, [members]);
 
   const onAckChange = useCallback((value: boolean) => {
     setSoftAck(value);
@@ -81,14 +86,14 @@ export const MemberDetailsForm: FC<MemberDetailsFormProps> = ({
   const softBlocks = hasSoftDuplicate && !softAck;
 
   return (
-    <Form action={formAction} state={state}>
+    <Form action={formAction}>
       <Container className="py-8">
         <FormCard title="Individual Member Details">
           <p className="mb-4 text-muted-foreground typo-body-small">
-            All fields are required for each of the {expectedMemberCount} group members recorded
-            on the membership step. Each member must have a unique National ID. Each member may
-            receive up to KES {MAX_MEMBER_LOAN_AMOUNT.toLocaleString()}, and the group total must
-            not exceed KES {MAX_GROUP_MEMBER_LOAN_TOTAL.toLocaleString()}.
+            All fields are required for each of all group members recorded on the membership
+            step. Each member must have a unique National ID. The group total amount must not
+            exceed KES {MAX_GROUP_MEMBER_LOAN_TOTAL.toLocaleString()} to meet predeparture costs
+            of the members.
           </p>
 
           {formError && (
@@ -157,6 +162,11 @@ export const MemberDetailsForm: FC<MemberDetailsFormProps> = ({
                     if (target?.name === `idNo_${index}`) {
                       setSoftActive(true);
                       setSoftId(target.value);
+                      setIdNos((prev) => {
+                        const next = [...prev];
+                        next[index] = target.value;
+                        return next;
+                      });
                       const mobileInput = document.querySelector<HTMLInputElement>(
                         `input[name="mobile_${index}"]`,
                       );
@@ -199,19 +209,20 @@ export const MemberDetailsForm: FC<MemberDetailsFormProps> = ({
                   defaultValue={formValues[`passportNo_${index}`]}
                 />
                 <FormField
-                  name={`purpose_${index}`}
-                  label="Purpose"
-                  required
-                  state={state}
-                  defaultValue={formValues[`purpose_${index}`]}
-                />
-                <FormField
                   name={`amount_${index}`}
                   label="Loan Amount (KES)"
                   type="number"
                   required
                   state={state}
                   defaultValue={formValues[`amount_${index}`]}
+                />
+                <MemberPassportAutofill
+                  nationalId={idNos[index] ?? formValues[`idNo_${index}`] ?? ''}
+                  index={index}
+                />
+                <MemberPlacementNotice
+                  nationalId={idNos[index] ?? formValues[`idNo_${index}`] ?? ''}
+                  memberLabel={`Member ${index + 1}`}
                 />
               </div>
             ))}

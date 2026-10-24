@@ -143,10 +143,21 @@ export async function POST(request: Request) {
       method === 'bearer' ||
       method === 'access_token'
     ) {
-      // Option A: already signed-in app presents its access token (no re-auth).
-      if (presentedAccess) {
-        const { verifyAccessToken } = await import('@/lib/auth/jwt');
-        const verified = await verifyAccessToken(presentedAccess);
+      // Option A: already signed-in app presents access or refresh token (no re-auth).
+      const presentedRefresh = String(
+        body.refreshToken || body.refresh_token || '',
+      ).trim();
+      if (presentedAccess || presentedRefresh) {
+        const { verifyAccessToken, verifyRefreshToken } = await import(
+          '@/lib/auth/jwt'
+        );
+        const verified =
+          (presentedAccess
+            ? await verifyAccessToken(presentedAccess)
+            : null) ||
+          (presentedRefresh
+            ? await verifyRefreshToken(presentedRefresh)
+            : null);
         if (!verified?.userId) {
           return withCors(
             request,
@@ -154,7 +165,8 @@ export async function POST(request: Request) {
               {
                 ok: false,
                 needAuth: true,
-                error: 'App session expired. Sign in again, then rescan the QR.',
+                error:
+                  'Could not confirm with the saved app session. Verify with OTP or email/password — you do not need to sign out of the app.',
               },
               { status: 401 },
             ),
@@ -228,6 +240,8 @@ export async function POST(request: Request) {
     NextResponse.json({
       ok: true,
       status: 'confirmed',
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
       message:
         'Confirmed. Return to the browser — it will finish signing you in automatically.',
     }),

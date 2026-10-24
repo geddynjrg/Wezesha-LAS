@@ -51,7 +51,14 @@ export async function submitTripartiteAction(memberId: string, _prev: unknown, f
     });
   });
 
-  await submitIndividualApplication(app.id);
+  if (!app.submittedAt) {
+    await submitIndividualApplication(app.id);
+  }
+
+  if (app.exitedCountry && app.loanAmountApproved && !app.offerLetterSignedAt) {
+    redirect(`/apply/individual/${memberId}/offer-letter`);
+  }
+
   redirect(`/apply/individual/${memberId}/dashboard`);
 }
 

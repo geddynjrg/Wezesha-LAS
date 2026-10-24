@@ -13,7 +13,7 @@ export const GroupLoanTermsContent: FC<GroupLoanTermsContentProps> = ({
     <p>
       We, the undersigned, being the members of <strong>{groupName}</strong> group, hereby commit
       the group jointly and severally to repay <strong>KShs {totalLoanAmount}</strong>, being the
-      total loan amount disbursed as per the terms and conditions listed below:
+      total loan amount applied as per the terms and conditions listed below:
     </p>
 
     <ul className="list-disc space-y-2 pl-6">
@@ -32,10 +32,7 @@ export const GroupLoanTermsContent: FC<GroupLoanTermsContentProps> = ({
         The loan shall be charged an <strong>8%</strong> service charge of the approved loan
         amount, deductible upfront.
       </li>
-      <li>
-        Insurance fees of <strong>0.55%</strong> of the approved loan amount shall apply and will
-        be deducted at disbursement.
-      </li>
+      <li>Applicable insurance fee for credit life policy.</li>
     </ul>
   </div>
 );

@@ -14,11 +14,10 @@ const GROUP_GUIDANCE: Record<string, Omit<StepGuidance, 'key' | 'title'>> = {
     prepare: [
       'Have your MSEA registration certificate ready.',
       'Confirm the group name matches the certificate exactly.',
-      'Know your county, constituency, ward, and cluster category.',
+      'Have the group registration date from the certificate.',
     ],
     commonMistakes: [
       'Typing a different group name than on the MSEA certificate.',
-      'Selecting the wrong constituency for the group’s location.',
       'Leaving registration number or date blank.',
     ],
   },
@@ -92,12 +91,11 @@ const GROUP_GUIDANCE: Record<string, Omit<StepGuidance, 'key' | 'title'>> = {
   },
   documents: {
     prepare: [
-      'Upload clear scans or photos of every required document.',
-      'Group certificate, group KRA, expression of interest, and each member’s ID, passport photo, and KRA.',
+      'No group files are uploaded on this step.',
+      'Each member uploads the passport biodata page on the individual application.',
     ],
     commonMistakes: [
-      'Blurry or cropped ID images.',
-      'Missing one member’s documents before submit.',
+      'Expecting group certificate or member ID uploads on this step.',
     ],
   },
 };
@@ -106,7 +104,7 @@ const INDIVIDUAL_GUIDANCE: Record<string, Omit<StepGuidance, 'key' | 'title'>> =
   'individual-information': {
     prepare: [
       'Confirm your name and National ID shown are correct.',
-      'Have your KRA PIN and education details ready.',
+      'Have your KRA PIN, education details, and passport biodata page ready.',
     ],
     commonMistakes: [
       'Entering a KRA PIN that does not match your certificate.',

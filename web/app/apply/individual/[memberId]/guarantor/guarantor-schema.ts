@@ -11,7 +11,7 @@ const kenyanPhoneSchema = z
   .string()
   .min(9, 'Phone number is required')
   .transform((value) => normalizeKenyanPhoneForApi(value))
-  .refine(isValidKenyanMobile, 'Enter a valid Kenyan mobile number (e.g. 07XX XXX XXX)');
+  .refine(isValidKenyanMobile, 'Enter a valid Kenyan mobile number (e.g. 07XX XXX XXX or 01XX XXX XXX)');
 
 export const guarantorFieldsSchema = z.object({
   name: z.string().min(1, 'Name is required'),

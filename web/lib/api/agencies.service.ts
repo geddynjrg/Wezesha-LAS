@@ -259,3 +259,18 @@ export function findAgencyByRegNo(
       (agency.companyRegNo || '').toLowerCase() === normalized,
   );
 }
+
+
+const LIST_API = '/api/agencies/list';
+
+/** Load every licensed agency for cluster pickers (no 100-item cap). */
+export async function listAllRecruitmentAgencies(): Promise<RecruitmentAgency[]> {
+  try {
+    const response = await fetch(LIST_API, { cache: 'no-store' });
+    if (!response.ok) return [];
+    const data = (await response.json()) as { results?: RecruitmentAgency[] };
+    return Array.isArray(data.results) ? data.results : [];
+  } catch {
+    return [];
+  }
+}

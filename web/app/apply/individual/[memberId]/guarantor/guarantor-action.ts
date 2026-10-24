@@ -16,6 +16,10 @@ import {
   sendSms,
 } from '@/lib/sms/sms.service';
 import { formatKenyanPhoneForDisplay } from '@/lib/phone/kenyan-phone';
+import {
+  consentOtpDeliveryMessage,
+  notifyConsentOtpToApp,
+} from '@/lib/push/notify-consent-otp';
 import { redirect } from 'next/navigation';
 
 function formatLoanAmount(amount: unknown): string {
@@ -120,13 +124,19 @@ export async function sendGuarantorOtpAction(
   });
 
   const smsResult = await sendSms(parsed.data.phone, message);
+  const appResult = await notifyConsentOtpToApp({
+    phone: parsed.data.phone,
+    message,
+    title: 'Uwezo Fund guarantor confirmation code',
+    meta: { memberId, guarantorNumber: String(guarantorNumber), kind: 'guarantor_confirmation' },
+  });
 
-  if (!smsResult.success) {
+  if (!smsResult.success && !appResult.delivered) {
     return {
       success: false as const,
       guarantorNumber,
       action: 'sendOtp' as const,
-      message: smsResult.error ?? 'Failed to send OTP SMS. Please verify the phone number and try again.',
+      message: smsResult.error ?? 'Failed to send OTP by SMS or Uwezo Fund app. Please verify the phone number and try again.',
       values: raw,
     };
   }
@@ -135,7 +145,12 @@ export async function sendGuarantorOtpAction(
     success: true as const,
     guarantorNumber,
     action: 'sendOtp' as const,
-    message: `OTP sent to ${parsed.data.name} at ${formatKenyanPhoneForDisplay(parsed.data.phone)}. Ask them to share the code with you.`,
+    message: consentOtpDeliveryMessage({
+      name: parsed.data.name,
+      phoneDisplay: formatKenyanPhoneForDisplay(parsed.data.phone),
+      smsOk: smsResult.success,
+      app: appResult,
+    }) + ' Ask them to share the code with you.',
     values: raw,
   };
 }

@@ -1,8 +1,6 @@
 import {
   MAX_GROUP_LOAN_TOTAL_MESSAGE,
   MAX_GROUP_MEMBER_LOAN_TOTAL,
-  MAX_MEMBER_LOAN_AMOUNT,
-  MAX_MEMBER_LOAN_AMOUNT_MESSAGE,
 } from '@/lib/adjust-loan-amounts';
 import { z } from 'zod';
 
@@ -18,11 +16,9 @@ export function createMemberDetailsSchema(count: number) {
     shape[`mobile_${index}`] = z.string().trim().min(9, 'Mobile number is required');
     shape[`email_${index}`] = z.string().trim().email('Enter a valid email address');
     shape[`passportNo_${index}`] = z.string().trim().min(2, 'Passport number is required');
-    shape[`purpose_${index}`] = z.string().trim().min(2, 'Purpose is required');
     shape[`amount_${index}`] = z.coerce
       .number({ message: 'Loan amount is required' })
-      .min(1, 'Loan amount is required')
-      .max(MAX_MEMBER_LOAN_AMOUNT, MAX_MEMBER_LOAN_AMOUNT_MESSAGE);
+      .min(1, 'Loan amount is required');
   }
 
   return z.object(shape).superRefine((data, ctx) => {
@@ -38,12 +34,12 @@ export function createMemberDetailsSchema(count: number) {
       if (firstIndex != null) {
         ctx.addIssue({
           code: 'custom',
-          message: 'Duplicate National ID.',
+          message: 'Each member must have a unique National ID.',
           path: [`idNo_${index}`],
         });
         ctx.addIssue({
           code: 'custom',
-          message: 'Duplicate National ID.',
+          message: 'Each member must have a unique National ID.',
           path: [`idNo_${firstIndex}`],
         });
         continue;
@@ -87,7 +83,6 @@ export function parseMemberDetailsForm(formData: FormData, count: number) {
       mobile: String(data[`mobile_${index}`]).trim(),
       email: String(data[`email_${index}`]).trim(),
       passportNo: String(data[`passportNo_${index}`]).trim(),
-      purpose: String(data[`purpose_${index}`]).trim(),
       amount: Number(data[`amount_${index}`]),
     });
   }

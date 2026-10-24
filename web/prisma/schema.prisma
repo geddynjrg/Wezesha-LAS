@@ -58,6 +58,8 @@ model User {
   name           String?
   idNumber       String?        @unique
   kraPin         String?
+  totpSecret     String?        @db.VarChar(64) @map("totp_secret")
+  totpEnrolledAt DateTime?      @map("totp_enrolled_at")
   ecitizenId     String?        @unique
   identifierType IdentifierType @default(EMAIL)
   role           UserRole       @default(APPLICANT)
@@ -69,6 +71,20 @@ model User {
   groupApplications GroupApplication[]
 
   @@map("users")
+}
+
+model PortalIdentity {
+  id          String   @id
+  email       String   @unique
+  phoneDigits String?  @map("phone_digits") @db.VarChar(20)
+  majuuUserId String?  @map("majuu_user_id")
+  loansLinked Boolean  @default(false) @map("loans_linked")
+  phoneStatus String   @default("unchecked") @map("phone_status") @db.VarChar(32)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([phoneDigits])
+  @@map("portal_identities")
 }
 
 model RefreshToken {
@@ -203,7 +219,6 @@ model GroupMember {
   mobile                String
   email                 String?
   subLocation           String?
-  purpose               String?
   amount                Decimal?         @db.Decimal(12, 2)
   loanStatus            MemberLoanStatus @default(PENDING)
   signature             String?          @db.Text
@@ -275,9 +290,15 @@ model IndividualApplication {
   creditHistory        CreditHistoryData?
   creditHistoryLoans   CreditHistoryLoan[]
   signature            SignatureData?
-  tripartite           TripartiteData?
-  tripartiteAccepted   Boolean           @default(false)
-  documents            ApplicationDocument[]
+  tripartite              TripartiteData?
+  tripartiteAccepted      Boolean           @default(false)
+  exitedCountry           Boolean           @default(false)
+  airTicketAmount         Decimal?          @db.Decimal(12, 2)
+  visaApplicationAmount   Decimal?          @db.Decimal(12, 2)
+  upkeepTradeAmount       Decimal?          @db.Decimal(12, 2)
+  offerLetterSignature    String?           @db.LongText
+  offerLetterSignedAt     DateTime?
+  documents               ApplicationDocument[]
   paymentTransactions  PaymentTransaction[]
 
   @@index([acknowledgmentNumber])

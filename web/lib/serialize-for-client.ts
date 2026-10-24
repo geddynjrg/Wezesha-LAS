@@ -24,7 +24,6 @@ export interface ClientMemberRow {
   mobile: string;
   email: string;
   passportNo: string;
-  purpose: string;
   amount: string;
 }
 
@@ -49,7 +48,6 @@ export function emptyClientMemberRow(): ClientMemberRow {
     mobile: '',
     email: '',
     passportNo: '',
-    purpose: '',
     amount: '',
   };
 }
@@ -61,7 +59,6 @@ export function toClientMemberRow(
     mobile?: string | null;
     email?: string | null;
     passportNo?: string | null;
-    purpose?: string | null;
     amount?: unknown;
   } | null,
 ): ClientMemberRow {
@@ -75,7 +72,6 @@ export function toClientMemberRow(
     mobile: member.mobile ?? '',
     email: member.email ?? '',
     passportNo: member.passportNo ?? '',
-    purpose: member.purpose ?? '',
     amount: decimalToString(member.amount),
   };
 }

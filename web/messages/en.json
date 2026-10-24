@@ -91,7 +91,11 @@
     "groupCtaButton": "Continue group applications",
     "otpSentEmail": "SMS unavailable — code sent to your email (and to the Uwezo Fund app if you stayed signed in)",
     "otpSentApp": "SMS/email unavailable — code sent to the Uwezo Fund app. Open the app and check Notifications.",
-    "otpDeliveryFailed": "Unable to send the verification code by SMS, email, or the Uwezo Fund app. Please try eCitizen or email/password login."
+    "otpDeliveryFailed": "Unable to send the verification code by SMS, email, or the Uwezo Fund app. Please try eCitizen or email/password login.",
+    "processTitle": "How an application proceeds",
+    "processOne": "The group chair completes the group application first.",
+    "processTwo": "Each listed member completes an individual application after group submission.",
+    "processThree": "Incomplete individual applications may delay group processing."
   },
   "MyApplicationPage": {
     "title": "My individual application",
@@ -123,12 +127,12 @@
     "imageDescription": "Wezesha Majuu programme",
     "criteria": {
       "title": "Eligibility Criteria",
-      "one": "Groups of three individuals registered with Micro Small and Medium Enterprise Authority (MSEA).",
-      "two": "Groups must hold a valid registration certificate and a bank account in the group name.",
-      "three": "Groups should include youth, women, and persons with disabilities.",
-      "four": "The group chair completes the group application first.",
-      "five": "Each listed member completes an individual application after group submission.",
-      "six": "Incomplete individual applications may delay group processing."
+      "one": "A group of at least three members, registered with the Micro and Small Enterprises Authority (MSEA), with a valid registration certificate.",
+      "two": "A bank account in the group name.",
+      "three": "Counts of men, women, and persons with disabilities must add up to the members on the MSEA registration.",
+      "four": "Each member must be at least 18 years old and have a Kenyan national ID, KRA PIN, and passport.",
+      "five": "The job placement must exist for every job seeker.",
+      "six": "Each member must provide two guarantors. A member’s loan is at most KES 166,666, and the group total is at most KES 500,000."
     }
   },
   "ApplyPage": {

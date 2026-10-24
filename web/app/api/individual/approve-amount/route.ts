@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma';
 import { NextResponse } from 'next/server';
+import { notifyApplicationStatusChannels } from '@/lib/notify/notify-application-status';
 
 /**
  * Internal/LMS webhook-style endpoint to mark an individual loan amount as approved.
@@ -63,6 +64,26 @@ export async function POST(request: Request) {
 
     return individual;
   });
+
+  try {
+    const member = await prisma.groupMember.findUnique({
+      where: { id: updated.memberId },
+    });
+    if (member) {
+      await notifyApplicationStatusChannels({
+        recipient: {
+          name: member.name,
+          phone: member.mobile,
+          email: member.email,
+        },
+        title: 'Wezesha Majuu loan amount approved',
+        emailSubject: 'Your Wezesha Majuu loan amount has been approved',
+        message: `Dear ${member.name}, your Uwezo Fund Wezesha Majuu loan amount has been approved (Ref: ${updated.acknowledgmentNumber}). Open majuu.uwezo.go.ke or the Uwezo Fund app to review and consent to the predisbursement agreement.`,
+      });
+    }
+  } catch (error) {
+    console.warn('[approve-amount] member status notify failed', error);
+  }
 
   return NextResponse.json({
     success: true,

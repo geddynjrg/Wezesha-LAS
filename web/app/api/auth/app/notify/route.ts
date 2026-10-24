@@ -6,14 +6,19 @@ export const runtime = 'nodejs';
 
 /**
  * Internal/webhook notify for OTP + loan status (EBIS SMS companion).
- * Auth: Authorization: Bearer $APP_PUSH_WEBHOOK_SECRET (or X-App-Push-Secret).
+ * Auth: Bearer APP_PUSH_WEBHOOK_SECRET, MAJUU_LMS_SYNC_TOKEN, or X-App-Push-Secret.
  */
 export async function POST(request: Request) {
-  const secret = process.env.APP_PUSH_WEBHOOK_SECRET || '';
+  const secrets = [
+    process.env.APP_PUSH_WEBHOOK_SECRET,
+    process.env.MAJUU_LMS_SYNC_TOKEN,
+    process.env.EXTERNAL_API_KEY,
+  ].filter((value): value is string => Boolean(value && value.trim()));
   const auth = request.headers.get('authorization') || '';
   const headerSecret = request.headers.get('x-app-push-secret') || '';
   const bearer = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  if (!secret || (bearer !== secret && headerSecret !== secret)) {
+  const provided = bearer || headerSecret;
+  if (secrets.length === 0 || !provided || !secrets.includes(provided)) {
     return withCors(
       request,
       NextResponse.json(
@@ -48,6 +53,7 @@ export async function POST(request: Request) {
     phone: body.phone ? String(body.phone) : undefined,
     email: body.email ? String(body.email) : undefined,
     userId: body.userId ? String(body.userId) : undefined,
+    skipFanout: request.headers.get('x-uwezo-app-push-fanout') === '1',
   });
 
   return withCors(

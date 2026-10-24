@@ -14,7 +14,20 @@ import {
   checkMseaReachable,
   getMseaDisabledMessage,
   lookupMseaBusiness,
+  normalizeMseaRegistrationNumber,
 } from '@/lib/msea';
+import {
+  applyNeaimsJobseekerToMember,
+  ensureRecruitmentFromPlacement,
+  matchLicensedAgencies,
+  recruitmentFieldLocked,
+} from '@/lib/assistive-chat-neaims';
+import {
+  placementBlockMessage,
+  unplacedGroupMembers,
+  unplacedJobseekers,
+} from '@/lib/neaims-placement-gate';
+import { fetchJobseekerGet } from '@/lib/neaims-jobseeker';
 import { prisma } from '@/lib/prisma';
 
 export type ApplyFlowResult = {
@@ -45,17 +58,29 @@ type FieldDef = {
   uploadCategory?: string;
 };
 
+const REMOVED_GROUP_INFORMATION_FIELDS = new Set([
+  'county',
+  'constituency',
+  'ward',
+  'location',
+  'subLocation',
+  'clusterCategory',
+  'geoLocationType',
+  'clusterCounty',
+  'clusterConstituency',
+  'clusterOther',
+  'destinationRegion',
+  'destinationCountry',
+  'agency',
+  'agentNumber',
+  'localAgentName',
+]);
+
 const GROUP_FIELDS: Record<number, FieldDef[]> = {
   1: [
     { key: 'registrationNumber', label: 'Registration number', kind: 'text' },
     { key: 'groupName', label: 'Group name', kind: 'text' },
     { key: 'registrationDate', label: 'Registration date (YYYY-MM-DD)', kind: 'date' },
-    { key: 'county', label: 'County', kind: 'text' },
-    { key: 'constituency', label: 'Constituency', kind: 'text' },
-    { key: 'ward', label: 'Ward', kind: 'text' },
-    { key: 'location', label: 'Location', kind: 'text' },
-    { key: 'subLocation', label: 'Sub-location', kind: 'text' },
-    { key: 'clusterCategory', label: 'Cluster category', kind: 'text' },
   ],
   2: [
     { key: 'totalMales', label: 'Total males', kind: 'number' },
@@ -77,32 +102,7 @@ const GROUP_FIELDS: Record<number, FieldDef[]> = {
     { key: 'accountNumber', label: 'Account number', kind: 'text' },
   ],
   8: [],
-  9: [
-    {
-      key: 'group-certificate',
-      label: 'Group registration certificate',
-      kind: 'upload',
-      uploadCategory: 'group-certificate',
-    },
-    {
-      key: 'group-kra',
-      label: 'Group KRA PIN certificate',
-      kind: 'upload',
-      uploadCategory: 'group-kra',
-    },
-    {
-      key: 'group-bank-template',
-      label: 'Bank details template',
-      kind: 'upload',
-      uploadCategory: 'group-bank-template',
-    },
-    {
-      key: 'expression-of-interest',
-      label: 'Expression of interest',
-      kind: 'upload',
-      uploadCategory: 'expression-of-interest',
-    },
-  ],
+  9: [],
 };
 
 const INDIVIDUAL_FIELDS: Record<number, FieldDef[]> = {
@@ -111,6 +111,23 @@ const INDIVIDUAL_FIELDS: Record<number, FieldDef[]> = {
     { key: 'phone', label: 'Phone number', kind: 'text' },
     { key: 'email', label: 'Email', kind: 'text' },
     { key: 'idNumber', label: 'National ID number', kind: 'text' },
+    { key: 'gender', label: 'Gender (NEAIMS)', kind: 'text' },
+    { key: 'dob', label: 'Date of birth (NEAIMS)', kind: 'date' },
+    { key: 'kraPin', label: 'KRA PIN (NEAIMS)', kind: 'text' },
+    { key: 'educationLevel', label: 'Education level (NEAIMS)', kind: 'text' },
+    { key: 'passportNo', label: 'Passport number (NEAIMS)', kind: 'text' },
+  ],
+  4: [
+    { key: 'agentNumber', label: 'Agency name or registration number', kind: 'text' },
+    { key: 'localAgentName', label: 'Local recruitment agent', kind: 'text' },
+    { key: 'employerAbroad', label: 'Employer abroad', kind: 'text' },
+    { key: 'recruiterCode', label: 'Employer code', kind: 'text' },
+    { key: 'countryOfDestination', label: 'Country of destination', kind: 'text' },
+    { key: 'natureOfWork', label: 'Nature of work', kind: 'text' },
+    { key: 'durationType', label: 'Duration type (months or years)', kind: 'text' },
+    { key: 'workDuration', label: 'Work duration', kind: 'text' },
+    { key: 'currency', label: 'Currency (KWD, AED, or RUB)', kind: 'text' },
+    { key: 'monthlyRemuneration', label: 'Monthly remuneration', kind: 'number' },
   ],
   2: [
     { key: 'county', label: 'County', kind: 'text' },
@@ -131,7 +148,6 @@ const GROUP_MEMBER_WIZARD: FieldDef[] = [
   { key: 'member.mobile', label: 'Mobile number', kind: 'text' },
   { key: 'member.email', label: 'Email', kind: 'text' },
   { key: 'member.passportNo', label: 'Passport number', kind: 'text' },
-  { key: 'member.purpose', label: 'Purpose / activity', kind: 'text' },
   { key: 'member.amount', label: 'Loan amount (KES)', kind: 'number' },
 ];
 
@@ -203,22 +219,13 @@ function navChips(
 }
 
 async function resolveMinGroupMembers(appId: string): Promise<number> {
-  let min = 5;
-  try {
-    const mod = await import('@/lib/constants/group-membership');
-    const v = (mod as { MIN_GROUP_MEMBERS?: number }).MIN_GROUP_MEMBERS;
-    if (typeof v === 'number' && v > 0) min = v;
-  } catch {
-    /* optional in overlay */
-  }
   const membership = await prisma.groupMembership.findUnique({
     where: { applicationId: appId },
     select: { totalMembers: true },
   });
-  if (membership?.totalMembers && membership.totalMembers > 0) {
-    return Math.max(min, membership.totalMembers);
-  }
-  return min;
+  return membership?.totalMembers && membership.totalMembers > 0
+    ? membership.totalMembers
+    : 0;
 }
 
 function memberCol(fieldKey: string): string {
@@ -342,8 +349,14 @@ function isMemberComplete(m: {
   name?: string | null;
   idNo?: string | null;
   mobile?: string | null;
+  email?: string | null;
+  passportNo?: string | null;
+  amount?: unknown;
 }): boolean {
   if (!m.name?.trim() || !m.idNo?.trim() || !m.mobile?.trim()) return false;
+  if (!m.email?.trim() || !m.passportNo?.trim()) return false;
+  const amount = Number(m.amount);
+  if (!Number.isFinite(amount) || amount < 1) return false;
   if (m.idNo.startsWith('DRAFT-')) return false;
   if (m.mobile === 'pending') return false;
   return true;
@@ -369,7 +382,7 @@ export async function groupMemberPicker(
   const done = completeCount >= minRequired;
 
   const lines = [
-    `Stage 4: Member details. Add or edit members in chat (minimum ${minRequired}).`,
+    'Stage 4: Member details. All fields are required for each group member recorded on the membership step. Each member must have a unique National ID. The group total amount must not exceed KES 500,000 to meet predeparture costs of the members.',
     members.length
       ? members
           .map((m, i) => {
@@ -378,16 +391,19 @@ export async function groupMemberPicker(
           })
           .join('\n')
       : 'No members yet.',
-    `Complete: ${completeCount}/${minRequired}.`,
+    completeCount >= minRequired
+      ? 'Every recorded member is complete.'
+      : 'Some recorded members still have empty fields.',
   ];
 
-  const quickReplies: ChatQuickReply[] = [
-    {
+  const quickReplies: ChatQuickReply[] = [];
+  if (members.length < minRequired) {
+    quickReplies.push({
       id: 'member-add',
       label: 'Add member',
       value: `member:add:group:${appId}`,
-    },
-  ];
+    });
+  }
   members.forEach((m, i) => {
     quickReplies.push({
       id: `member-edit-${m.id}`,
@@ -397,7 +413,7 @@ export async function groupMemberPicker(
   });
   quickReplies.push({
     id: 'member-done',
-    label: done ? 'Done (advance)' : `Done (need ${minRequired})`,
+    label: done ? 'Done (advance)' : 'Done (finish every member)',
     value: `member:done:group:${appId}`,
   });
   quickReplies.push(...navChips('group', appId, 4, `/apply/group/${appId}/member-details`));
@@ -458,6 +474,17 @@ export async function handleMemberAction(
         quickReplies: [{ id: 'menu', label: 'Back to menu', value: 'menu' }],
       };
     }
+    const recorded = await resolveMinGroupMembers(appId);
+    const existingCount = await prisma.groupMember.count({
+      where: { applicationId: appId },
+    });
+    if (recorded > 0 && existingCount >= recorded) {
+      const again = await groupMemberPicker(userId, appId);
+      return {
+        ...again,
+        reply: `Member details already include every group member recorded on the membership step.\n\n${again.reply}`,
+      };
+    }
     return beginMemberField(appId, undefined, GROUP_MEMBER_WIZARD[0]!);
   }
 
@@ -502,7 +529,16 @@ export async function handleMemberAction(
       const again = await groupMemberPicker(userId, appId);
       return {
         ...again,
-        reply: `Need at least ${minRequired} complete members (have ${completeCount}).\n\n${again.reply}`,
+        reply: `Every group member recorded on the membership step must have all fields filled, and each National ID must be unique.\n\n${again.reply}`,
+      };
+    }
+    const unplacedMembers = await unplacedGroupMembers(appId);
+    if (unplacedMembers.length > 0) {
+      const again = await groupMemberPicker(userId, appId);
+      return {
+        ...again,
+        reply:
+          `A job placement must exist for every job seeker before the group can continue.\n${placementBlockMessage(unplacedMembers)}\n\n${again.reply}`,
       };
     }
     await updateGroupProgress(appId, 5);
@@ -577,7 +613,6 @@ export async function saveGroupMemberField(
           mobile: 'pending',
           email: null,
           passportNo: null,
-          purpose: null,
           amount: null,
         },
       });
@@ -628,6 +663,14 @@ export async function saveGroupMemberField(
           where: { id: currentId },
           data: { idNo: value },
         });
+        const neaimsNote = await applyNeaimsJobseekerToMember(currentId, value);
+        const nextField = GROUP_MEMBER_WIZARD[wizardIdx + 1];
+        if (nextField) {
+          return {
+            ...beginMemberField(appId, currentId, nextField),
+            reply: `Saved ${GROUP_MEMBER_WIZARD[wizardIdx]!.label}. ${neaimsNote}\n\nEnter ${nextField.label}.`,
+          };
+        }
       } else if (col === 'amount') {
         const num = Number(value.replace(/,/g, ''));
         if (!Number.isFinite(num) || num < 0) {
@@ -656,7 +699,7 @@ export async function saveGroupMemberField(
           where: { id: currentId },
           data: { amount: num },
         });
-      } else if (col === 'email' || col === 'passportNo' || col === 'purpose') {
+      } else if (col === 'email' || col === 'passportNo') {
         await prisma.groupMember.update({
           where: { id: currentId },
           data: { [col]: value === '-' ? null : value },
@@ -718,7 +761,7 @@ async function applyMseaToGroup(
     ? new Date(record.registration_date)
     : new Date();
   const groupName = (record.business_name || '').trim() || 'Group';
-  const regNo = (record.registration_number || registrationNumber).trim();
+  const regNo = normalizeMseaRegistrationNumber(record.registration_number || registrationNumber);
 
   await prisma.groupData.upsert({
     where: { applicationId: appId },
@@ -780,7 +823,7 @@ async function applyMseaToGroup(
 
   return {
     ok: true,
-    summary: `MSEA filled: ${filled.join(', ')}. Complete any remaining location / cluster fields.`,
+    summary: `MSEA filled: ${filled.join(', ')}.`,
   };
 }
 
@@ -808,6 +851,39 @@ export async function groupFieldPicker(
 
   if (stage === 4) {
     return groupMemberPicker(userId, appId);
+  }
+
+  if (stage > 4) {
+    const unplacedMembers = await unplacedGroupMembers(appId);
+    if ((app.members?.length ?? 0) === 0 || unplacedMembers.length > 0) {
+      return {
+        reply:
+          unplacedMembers.length > 0
+            ? `A job placement must exist for every job seeker before this stage.\n${placementBlockMessage(unplacedMembers)}`
+            : 'List every job seeker on member details. A NEAIMS placement is required before the group can continue.',
+        quickReplies: [
+          {
+            id: 'members',
+            label: 'Member details',
+            value: `stage:group:${appId}:4`,
+          },
+          { id: 'menu', label: 'Back to menu', value: 'menu' },
+        ],
+      };
+    }
+  }
+
+  if (stage === 9) {
+    return {
+      reply:
+        'Upload Documents no longer collects group files. Each member uploads the passport biodata page on the individual application. Open this step to submit the group application.',
+      quickReplies: [
+        { id: 'open', label: 'Open Upload Documents', value: `open:${href}` },
+        ...navChips('group', appId, stage),
+      ],
+      phase: 'field_pick',
+      openUrl: href,
+    };
   }
 
   const fields = GROUP_FIELDS[stage] || [];
@@ -886,6 +962,23 @@ export async function individualFieldPicker(
       quickReplies: [{ id: 'menu', label: 'Back to menu', value: 'menu' }],
     };
   }
+  const memberRow = await prisma.groupMember.findUnique({
+    where: { id: memberId },
+    select: { idNo: true, name: true },
+  });
+  const unplacedPerson = await unplacedJobseekers([
+    {
+      nationalId: memberRow?.idNo ?? '',
+      name: memberRow?.name,
+    },
+  ]);
+  if (unplacedPerson.length > 0) {
+    return {
+      reply: `Individual application cannot continue. ${placementBlockMessage(unplacedPerson)}`,
+      quickReplies: [{ id: 'menu', label: 'Back to menu', value: 'menu' }],
+    };
+  }
+
   const step = INDIVIDUAL_STEPS.find((s) => s.index === stage);
   const href = `/apply/individual/${memberId}${step?.path || '/individual-information'}`;
   const fields = INDIVIDUAL_FIELDS[stage] || [];
@@ -902,16 +995,35 @@ export async function individualFieldPicker(
 
   const ind = await prisma.individualApplication.findUnique({
     where: { memberId },
-    include: { location: true, bankAccount: true, member: true },
+    include: { location: true, bankAccount: true, member: true, recruitment: true },
   });
+
+  let neaimsLead = '';
+  if (stage === 4) {
+    neaimsLead = `${await ensureRecruitmentFromPlacement(memberId)}\n\n`;
+    const refreshed = await prisma.recruitmentData.findUnique({
+      where: { applicationId: ind?.id || '__none__' },
+    });
+    if (refreshed && ind) {
+      ind.recruitment = refreshed;
+    }
+  }
 
   const valueFor = (f: FieldDef): string | null => {
     if (stage === 1) {
+      const dob = ind?.member?.dob
+        ? ind.member.dob.toISOString().slice(0, 10)
+        : null;
       const map: Record<string, string | null | undefined> = {
         fullName: ind?.member?.name,
         phone: ind?.member?.mobile,
         email: ind?.member?.email,
         idNumber: ind?.member?.idNo,
+        gender: ind?.member?.gender,
+        dob,
+        kraPin: ind?.member?.kraPin,
+        educationLevel: ind?.member?.educationLevel,
+        passportNo: ind?.member?.passportNo,
       };
       return map[f.key] || null;
     }
@@ -920,6 +1032,11 @@ export async function individualFieldPicker(
         String((ind.location as Record<string, unknown>)[f.key] ?? '').trim() ||
         null
       );
+    }
+    if (stage === 4 && ind?.recruitment) {
+      const raw = (ind.recruitment as Record<string, unknown>)[f.key];
+      if (raw == null) return null;
+      return String(raw).trim() || null;
     }
     if (stage === 6 && ind?.bankAccount) {
       return (
@@ -950,7 +1067,7 @@ export async function individualFieldPicker(
   }
 
   return {
-    reply: `Stage ${stage}: ${step?.title}. Tap a field to update it in chat.`,
+    reply: `${neaimsLead}Stage ${stage}: ${step?.title}. Tap a field to update it in chat.`,
     quickReplies: replies,
     phase: 'field_pick',
   };
@@ -1048,8 +1165,39 @@ export async function beginFieldEdit(
   if (!field) {
     return individualFieldPicker(userId, appId, stage);
   }
+  const member = await prisma.groupMember.findUnique({
+    where: { id: appId },
+    select: { idNo: true },
+  });
+  if (stage === 1 && fieldKey === 'kraPin' && member?.idNo) {
+    const jobseeker = await fetchJobseekerGet(member.idNo);
+    if (jobseeker.kraPin) {
+      return {
+        reply: `KRA PIN ${jobseeker.kraPin} comes from NEAIMS and cannot be edited.`,
+        quickReplies: [
+          { id: 'back', label: 'Back to fields', value: `stage:individual:${appId}:${stage}` },
+        ],
+        phase: 'field_pick',
+      };
+    }
+  }
+  if (stage === 4 && member?.idNo && (await recruitmentFieldLocked(member.idNo, fieldKey))) {
+    return {
+      reply: `${field.label} was filled from the NEAIMS placement and cannot be edited.`,
+      quickReplies: [
+        { id: 'back', label: 'Back to fields', value: `stage:individual:${appId}:${stage}` },
+      ],
+      phase: 'field_pick',
+    };
+  }
+  const neaimsHint =
+    stage === 1 && fieldKey === 'idNumber'
+      ? ' I will look this National ID up on NEAIMS Jobseeker Get and Placements.'
+      : stage === 4 && fieldKey === 'agentNumber'
+        ? ' Type an agency name or registration number. I will search the NEAIMS licensed agency list.'
+        : '';
   return {
-    reply: `Enter ${field.label}.`,
+    reply: `Enter ${field.label}.${neaimsHint}`,
     quickReplies: [
       {
         id: 'back',
@@ -1139,8 +1287,19 @@ export async function saveGroupField(
 
   try {
     let mseaNote = '';
+    if (
+      stage === 1 &&
+      REMOVED_GROUP_INFORMATION_FIELDS.has(fieldKey)
+    ) {
+      return {
+        reply:
+          'Group location and cluster category are no longer collected on the group application.',
+        quickReplies: navChips('group', appId, stage),
+      };
+    }
     if (stage === 1) {
       if (fieldKey === 'registrationNumber') {
+        value = normalizeMseaRegistrationNumber(value);
         const msea = await applyMseaToGroup(appId, value);
         if (msea.ok) {
           mseaNote = msea.summary;
@@ -1337,6 +1496,23 @@ export async function saveIndividualField(
   fieldKey: string,
   rawValue: string,
 ): Promise<ApplyFlowResult> {
+  const memberRow = await prisma.groupMember.findUnique({
+    where: { id: memberId },
+    select: { idNo: true, name: true },
+  });
+  const unplacedPerson = await unplacedJobseekers([
+    {
+      nationalId: memberRow?.idNo ?? '',
+      name: memberRow?.name,
+    },
+  ]);
+  if (unplacedPerson.length > 0) {
+    return {
+      reply: `Individual application cannot continue. ${placementBlockMessage(unplacedPerson)}`,
+      quickReplies: [{ id: 'menu', label: 'Back to menu', value: 'menu' }],
+    };
+  }
+
   const owned = await assertOwnsIndividual(userId, memberId);
   if (!owned) {
     return {
@@ -1374,13 +1550,213 @@ export async function saveIndividualField(
         phone: 'mobile',
         email: 'email',
         idNumber: 'idNo',
+        gender: 'gender',
+        kraPin: 'kraPin',
+        educationLevel: 'educationLevel',
+        passportNo: 'passportNo',
       };
-      const col = memberMap[fieldKey];
-      if (!col) throw new Error('Unknown field');
-      await prisma.groupMember.update({
-        where: { id: memberId },
-        data: { [col]: value },
+      if (fieldKey === 'kraPin') {
+        const current = await prisma.groupMember.findUnique({
+          where: { id: memberId },
+          select: { idNo: true },
+        });
+        const jobseeker = current?.idNo ? await fetchJobseekerGet(current.idNo) : null;
+        if (jobseeker?.kraPin) {
+          const again = await individualFieldPicker(userId, memberId, stage);
+          return {
+            ...again,
+            reply: `KRA PIN stays ${jobseeker.kraPin} from NEAIMS.\n\n${again.reply}`,
+          };
+        }
+      }
+      if (fieldKey === 'dob') {
+        const dob = new Date(value);
+        if (Number.isNaN(dob.getTime())) {
+          return {
+            reply: 'Use date format YYYY-MM-DD.',
+            phase: 'await_field',
+            expectFieldValue: true,
+            fieldContext: {
+              kind: 'individual',
+              appId: memberId,
+              stage,
+              field: fieldKey,
+              label: 'Date of birth',
+            },
+            quickReplies: [
+              { id: 'back', label: 'Back to fields', value: `stage:individual:${memberId}:${stage}` },
+            ],
+          };
+        }
+        await prisma.groupMember.update({
+          where: { id: memberId },
+          data: { dob },
+        });
+      } else {
+        const col = memberMap[fieldKey];
+        if (!col) throw new Error('Unknown field');
+        await prisma.groupMember.update({
+          where: { id: memberId },
+          data: { [col]: value },
+        });
+      }
+      if (fieldKey === 'idNumber') {
+        const note = await applyNeaimsJobseekerToMember(memberId, value);
+        const again = await individualFieldPicker(userId, memberId, stage);
+        return {
+          ...again,
+          reply: `Saved National ID. ${note}\n\n${again.reply}`,
+          quickReplies: withNextStageChip(
+            again.quickReplies,
+            `stage:individual:${memberId}:${stage + 1}`,
+            stage,
+            MAX_INDIVIDUAL_STAGE,
+          ),
+        };
+      }
+    } else if (stage === 4) {
+      const ind = await prisma.individualApplication.findUnique({
+        where: { memberId },
+        include: { member: { select: { idNo: true } } },
       });
+      if (!ind) throw new Error('Individual application missing');
+      if (
+        ind.member.idNo &&
+        (await recruitmentFieldLocked(ind.member.idNo, fieldKey))
+      ) {
+        const again = await individualFieldPicker(userId, memberId, stage);
+        return {
+          ...again,
+          reply: `That recruitment field is locked from the NEAIMS placement.\n\n${again.reply}`,
+        };
+      }
+      if (fieldKey === 'agentNumber') {
+        const matches = await matchLicensedAgencies(value);
+        const exact =
+          matches.find(
+            (agency) =>
+              agency.neaRegNo.toLowerCase() === value.toLowerCase() ||
+              agency.agencyName.toLowerCase() === value.toLowerCase(),
+          ) || (matches.length === 1 ? matches[0] : null);
+        if (!exact) {
+          const chips = matches.slice(0, 8).map((agency) => ({
+            id: `ag-${agency.neaRegNo}`,
+            label: `${agency.neaRegNo} - ${agency.agencyName}`.slice(0, 80),
+            value: agency.neaRegNo,
+          }));
+          return {
+            reply: matches.length
+              ? 'Several licensed agencies match. Tap one, or type a more specific name or number.'
+              : 'No licensed agency matched that search. Try the agency name or registration number.',
+            quickReplies: [
+              ...chips,
+              { id: 'back', label: 'Back to fields', value: `stage:individual:${memberId}:${stage}` },
+            ],
+            phase: 'await_field',
+            expectFieldValue: true,
+            fieldContext: {
+              kind: 'individual',
+              appId: memberId,
+              stage,
+              field: 'agentNumber',
+              label: 'Agency name or registration number',
+            },
+          };
+        }
+        await prisma.recruitmentData.upsert({
+          where: { applicationId: ind.id },
+          create: {
+            applicationId: ind.id,
+            agentNumber: exact.neaRegNo,
+            localAgentName: exact.agencyName,
+          },
+          update: {
+            agentNumber: exact.neaRegNo,
+            localAgentName: exact.agencyName,
+          },
+        });
+      } else if (fieldKey === 'monthlyRemuneration') {
+        const amount = Number(value.replace(/,/g, ''));
+        if (!Number.isFinite(amount) || amount <= 0) {
+          return {
+            reply: 'Enter a positive monthly remuneration.',
+            phase: 'await_field',
+            expectFieldValue: true,
+            fieldContext: {
+              kind: 'individual',
+              appId: memberId,
+              stage,
+              field: fieldKey,
+              label: 'Monthly remuneration',
+            },
+            quickReplies: [
+              { id: 'back', label: 'Back to fields', value: `stage:individual:${memberId}:${stage}` },
+            ],
+          };
+        }
+        await prisma.recruitmentData.upsert({
+          where: { applicationId: ind.id },
+          create: { applicationId: ind.id, monthlyRemuneration: amount },
+          update: { monthlyRemuneration: amount },
+        });
+      } else if (fieldKey === 'currency') {
+        const currency = value.toUpperCase();
+        if (!['KWD', 'AED', 'RUB'].includes(currency)) {
+          return {
+            reply: 'Currency must be KWD, AED, or RUB.',
+            phase: 'await_field',
+            expectFieldValue: true,
+            fieldContext: {
+              kind: 'individual',
+              appId: memberId,
+              stage,
+              field: fieldKey,
+              label: 'Currency',
+            },
+            quickReplies: [
+              { id: 'kwd', label: 'KWD', value: 'KWD' },
+              { id: 'aed', label: 'AED', value: 'AED' },
+              { id: 'rub', label: 'RUB', value: 'RUB' },
+            ],
+          };
+        }
+        await prisma.recruitmentData.upsert({
+          where: { applicationId: ind.id },
+          create: { applicationId: ind.id, currency },
+          update: { currency },
+        });
+      } else if (fieldKey === 'durationType') {
+        const durationType = value.toLowerCase();
+        if (durationType !== 'months' && durationType !== 'years') {
+          return {
+            reply: 'Duration type must be months or years.',
+            phase: 'await_field',
+            expectFieldValue: true,
+            fieldContext: {
+              kind: 'individual',
+              appId: memberId,
+              stage,
+              field: fieldKey,
+              label: 'Duration type',
+            },
+            quickReplies: [
+              { id: 'months', label: 'Months', value: 'months' },
+              { id: 'years', label: 'Years', value: 'years' },
+            ],
+          };
+        }
+        await prisma.recruitmentData.upsert({
+          where: { applicationId: ind.id },
+          create: { applicationId: ind.id, durationType },
+          update: { durationType },
+        });
+      } else {
+        await prisma.recruitmentData.upsert({
+          where: { applicationId: ind.id },
+          create: { applicationId: ind.id, [fieldKey]: value },
+          update: { [fieldKey]: value },
+        });
+      }
     } else if (stage === 2) {
       const ind = await prisma.individualApplication.findUnique({
         where: { memberId },

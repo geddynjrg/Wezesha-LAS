@@ -198,6 +198,7 @@ const FIELD_TO_TYPE: Record<string, OcrDocType> = {
   'expression-of-interest': 'expression_of_interest',
   'member-id': 'national_id',
   'member-passport': 'passport',
+  'passport-biodata': 'passport',
   'member-kra': 'kra_pin',
   'individual-document': 'generic_document',
   // Declared / chat defaults

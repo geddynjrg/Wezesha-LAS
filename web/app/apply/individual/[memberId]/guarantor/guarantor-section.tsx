@@ -428,7 +428,7 @@ export const GuarantorSection: FC<GuarantorSectionProps> = ({
 
       <div className="rounded-xl border border-dashed border-neutral-300 p-4">
         <p className="typo-body-medium mb-3 text-neutral-700">
-          Send an OTP to the guarantor&apos;s phone. They will receive a consent message with a code to share with you.
+          Send an OTP to the guarantor&apos;s phone. The code is delivered by SMS and to the Uwezo Fund app (if they are signed in). Ask them to share the code with you.
         </p>
 
         <div className="flex flex-wrap gap-3">

@@ -36,11 +36,13 @@ export function buildMemberConsentOtpMessage({
 export function buildGuaranteeConsentMessage({
   memberName,
   groupName,
+  consentUrl,
 }: {
   memberName: string;
   groupName: string;
+  consentUrl: string;
 }): string {
-  return `Dear ${memberName}, you are requested to consent to the Uwezo Fund Wezesha Majuu loan repayment commitment for group ${groupName}. Please contact your group leader to confirm your guarantee.`;
+  return `Dear ${memberName}, you are requested to consent to the Uwezo Fund Wezesha Majuu loan repayment commitment for group ${groupName}. Open this link, review the terms, then tap I consent: ${consentUrl}`;
 }
 
 export function buildGuarantorOtpMessage({

@@ -5,6 +5,8 @@ import {
   individualInformationSchema,
   resolveEducationLevelForSave,
 } from './individual-information-schema';
+import { fetchJobseekerGet } from '@/lib/neaims-jobseeker';
+import { PASSPORT_BIODATA_CATEGORY } from '@/lib/individual-documents';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 
@@ -31,12 +33,25 @@ export async function saveIndividualInformationAction(
     parsed.data.educationLevelOther,
   );
 
+  const memberRow = await prisma.groupMember.findUnique({
+    where: { id: memberId },
+    select: { idNo: true, kraPin: true },
+  });
+  const neaims = memberRow?.idNo
+    ? await fetchJobseekerGet(memberRow.idNo)
+    : null;
+  const kraPin =
+    neaims?.kraPin?.trim() ||
+    parsed.data.kraPin?.trim() ||
+    memberRow?.kraPin ||
+    undefined;
+
   await prisma.groupMember.update({
     where: { id: memberId },
     data: {
       gender: parsed.data.gender,
       dob: parsed.data.dob ? new Date(parsed.data.dob) : undefined,
-      kraPin: parsed.data.kraPin,
+      kraPin,
       educationLevel,
       poBox: parsed.data.poBox,
       postalCode: parsed.data.postalCode,
@@ -45,7 +60,23 @@ export async function saveIndividualInformationAction(
     },
   });
 
-  const app = await prisma.individualApplication.findUnique({ where: { memberId } });
+  const app = await prisma.individualApplication.findUnique({
+    where: { memberId },
+    include: { documents: true },
+  });
+  const hasPassportBiodata = app?.documents.some(
+    (document) => document.category === PASSPORT_BIODATA_CATEGORY,
+  );
+  if (!hasPassportBiodata) {
+    return {
+      success: false as const,
+      errors: {
+        passportBiodata: ['Passport biodata page is required'],
+      },
+      values: formValues,
+    };
+  }
+
   if (app) {
     await prisma.individualApplication.update({
       where: { id: app.id },

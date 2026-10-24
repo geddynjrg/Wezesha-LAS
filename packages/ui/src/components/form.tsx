@@ -21,9 +21,11 @@ import type { FlattenObjectKeys } from "@workspace/ui/types";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type InputValues = Record<string, any>;
 
-export const Form: FC<FormPrimitive.FormProps> = ({
+export const Form: FC<FormPrimitive.FormProps & { state?: unknown }> = ({
   children,
   action,
+  // useForm state is for Field/FormField only — never forward to the DOM.
+  state: _state,
   ...props
 }) => {
   return action ? (

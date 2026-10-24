@@ -8,6 +8,59 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function normalizeAppPhone(raw?: string): string | undefined {
+  const digits = String(raw || '').replace(/\D/g, '');
+  if (!digits) return undefined;
+  let n = digits;
+  if (n.startsWith('0') && n.length === 10) n = `254${n.slice(1)}`;
+  else if (n.length === 9 && /^[17]/.test(n)) n = `254${n}`;
+  if (n.startsWith('254') && n.length === 12) return `+${n}`;
+  const trimmed = String(raw || '').trim();
+  return trimmed || undefined;
+}
+
+function phoneDigits(value?: string | null) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+async function findUserByPhone(phone?: string) {
+  if (!phone) return null;
+  const last9 = phoneDigits(phone).slice(-9);
+  if (last9.length !== 9) return null;
+  const candidates = await prisma.user.findMany({
+    where: { phoneNumber: { contains: last9 } },
+    take: 20,
+  });
+  const matches = candidates.filter(
+    (candidate) => phoneDigits(candidate.phoneNumber).slice(-9) === last9,
+  );
+  if (matches.length === 0) return null;
+  return matches.sort((a, b) => accountCompleteness(b) - accountCompleteness(a))[0];
+}
+
+function accountCompleteness(user: {
+  email?: string | null;
+  passwordHash?: string | null;
+  idNumber?: string | null;
+  name?: string | null;
+}) {
+  return (
+    (user.passwordHash ? 8 : 0) +
+    (user.email ? 4 : 0) +
+    (user.idNumber ? 2 : 0) +
+    (user.name ? 1 : 0)
+  );
+}
+
+function isUniqueConstraint(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === 'P2002'
+  );
+}
+
 export async function registerWithEmail(email: string, password: string) {
   const normalized = normalizeEmail(email);
   const existing = await prisma.user.findUnique({ where: { email: normalized } });
@@ -54,48 +107,80 @@ export async function upsertLoginWithEmailPhone(input: {
   forceUpdatePassword?: boolean;
 }) {
   const email = normalizeEmail(input.email);
-  const phone = String(input.phone || '').trim() || undefined;
+  const phone = normalizeAppPhone(input.phone);
   let user = await prisma.user.findUnique({ where: { email } });
   let created = false;
+
+  if (!user) {
+    const byPhone = await findUserByPhone(phone);
+    const phoneEmail = byPhone?.email?.trim().toLowerCase() || '';
+    if (
+      byPhone &&
+      (!byPhone.passwordHash || !phoneEmail || phoneEmail === email)
+    ) {
+      user = byPhone;
+    }
+  }
 
   if (!user) {
     if (input.createIfMissing === false) {
       throw new Error('Invalid email or password');
     }
     const passwordHash = await hashPassword(input.password);
-    user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        phoneNumber: phone,
-        identifierType: IdentifierType.EMAIL,
-      },
-    });
-    created = true;
-  } else {
-    if (isPsRole(user.role)) {
-      throw new Error('Invalid email or password');
-    }
-    if (user.passwordHash && !input.forceUpdatePassword) {
-      const valid = await verifyPassword(input.password, user.passwordHash);
-      if (!valid) {
-        throw new Error('Invalid email or password');
-      }
-    } else {
-      const passwordHash = await hashPassword(input.password);
-      user = await prisma.user.update({
-        where: { id: user.id },
+    try {
+      user = await prisma.user.create({
         data: {
+          email,
           passwordHash,
-          ...(phone ? { phoneNumber: phone } : {}),
+          phoneNumber: phone,
+          identifierType: IdentifierType.EMAIL,
         },
       });
+      created = true;
+    } catch (error) {
+      if (!phone || !isUniqueConstraint(error)) throw error;
+      const byPhone = await findUserByPhone(phone);
+      if (byPhone && !byPhone.passwordHash) {
+        user = byPhone;
+      } else {
+        user = await prisma.user.create({
+          data: {
+            email,
+            passwordHash,
+            identifierType: IdentifierType.EMAIL,
+          },
+        });
+        created = true;
+      }
     }
-    if (phone && phone !== user.phoneNumber) {
+  }
+
+  if (isPsRole(user.role)) {
+    throw new Error('Invalid email or password');
+  }
+  if (user.passwordHash && !input.forceUpdatePassword) {
+    const valid = await verifyPassword(input.password, user.passwordHash);
+    if (!valid) {
+      throw new Error('Invalid email or password');
+    }
+  } else {
+    const passwordHash = await hashPassword(input.password);
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        email: user.email || email,
+      },
+    });
+  }
+  if (phone && phoneDigits(phone).slice(-9) !== phoneDigits(user.phoneNumber).slice(-9)) {
+    try {
       user = await prisma.user.update({
         where: { id: user.id },
         data: { phoneNumber: phone },
       });
+    } catch (error) {
+      if (!isUniqueConstraint(error)) throw error;
     }
   }
 

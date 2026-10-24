@@ -6,6 +6,7 @@ import {
   isTripartiteFullySigned,
 } from '@/lib/individual-application-access';
 import { getIndividualApplication } from '@/lib/data/applications';
+import { formatKes, missingOfferSteps, nextOfferStepUrl, offerBreakdown, offerLetterAction } from '@/lib/offer-letter';
 import { getPesaflowPayContext } from '@/lib/payments/pesaflow.service';
 import { PesaflowPayPanel } from '@/components/pesaflow-pay-panel';
 import { Container } from '@workspace/ui/components/container';
@@ -35,6 +36,10 @@ export default async function IndividualDashboardPage({
   const amountApproved = isLoanAmountApproved(app);
   const canPredisbursement = canConsentToPredisbursement(app);
   const approvedAmount = money(app.awardAmount ?? app.member.amount);
+  const isDisbursed = app.member.loanStatus === 'DISBURSED';
+  const statusLabel = isDisbursed
+    ? 'Approved · Loan disbursed'
+    : formatApplicationStatusLabel(app.status);
   const base = `/apply/individual/${memberId}`;
   const payContext = await getPesaflowPayContext(memberId).catch(() => null);
 
@@ -54,7 +59,7 @@ export default async function IndividualDashboardPage({
             <p className="typo-h5">{app.acknowledgmentNumber}</p>
           </div>
           <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-medium">
-            {formatApplicationStatusLabel(app.status)}
+            {statusLabel}
           </span>
         </div>
         <dl className="grid gap-3 sm:grid-cols-2">
@@ -73,6 +78,10 @@ export default async function IndividualDashboardPage({
           <div>
             <dt className="text-sm text-neutral-600">Loan / award amount (KES)</dt>
             <dd className="font-medium">{approvedAmount}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-neutral-600">Disbursement</dt>
+            <dd className="font-medium">{isDisbursed ? 'Disbursed' : 'Not disbursed'}</dd>
           </div>
           <div>
             <dt className="text-sm text-neutral-600">Submitted</dt>
@@ -220,11 +229,52 @@ export default async function IndividualDashboardPage({
           <PesaflowPayPanel
             memberId={memberId}
             amount={payContext.amount}
+            loaned={payContext.loaned}
+            repaid={payContext.repaid}
+            arrears={payContext.arrears}
             configured={payContext.configured}
             eligible={payContext.eligible}
             reason={payContext.reason}
             recent={payContext.recent}
           />
+        </Card>
+      ) : null}
+
+      {offerLetterAction(app) ? (
+        <Card radius="lg" className="space-y-3 border border-neutral-200 bg-white p-6">
+          <h2 className="typo-h5">Offer letter</h2>
+          <p className="text-sm text-neutral-600">
+            Approved amount you are expected to pay: KES {formatKes(offerBreakdown(app).total)}.
+            {isDisbursed ? ' Loan disbursed.' : ' Loan not yet disbursed.'}
+          </p>
+          <ul className="list-disc pl-5 text-sm">
+            <li>AIR TICKET: KES {formatKes(offerBreakdown(app).airTicket)}</li>
+            <li>VISA APPLICATION: KES {formatKes(offerBreakdown(app).visaApplication)}</li>
+            <li>UPKEEP/TRADE: KES {formatKes(offerBreakdown(app).upkeepTrade)}</li>
+          </ul>
+          {offerLetterAction(app) === 'sign' && missingOfferSteps(app).length > 0 ? (
+            <>
+              <p className="text-sm text-neutral-700">
+                Complete these sections and sign the tripartite agreement before the offer letter:
+              </p>
+              <ul className="list-disc pl-5 text-sm">
+                {missingOfferSteps(app).map((step) => (
+                  <li key={step.key}>{step.label}</li>
+                ))}
+              </ul>
+              <Button asChild>
+                <Link href={nextOfferStepUrl(memberId, app)}>Continue application</Link>
+              </Button>
+            </>
+          ) : offerLetterAction(app) === 'sign' ? (
+            <Button asChild>
+              <Link href={`${base}/offer-letter`}>Sign Offer Letter</Link>
+            </Button>
+          ) : (
+            <Button asChild>
+              <a href={`${base}/offer-letter/download`}>Download Signed Offer Letter</a>
+            </Button>
+          )}
         </Card>
       ) : null}
 

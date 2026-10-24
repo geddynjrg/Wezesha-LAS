@@ -25,7 +25,7 @@ export const TermsForm: FC<TermsFormProps> = ({ id, groupName, totalLoanAmount }
 
           <label className="typo-body-medium mt-6 flex items-start gap-3 rounded-xl border border-neutral-300 bg-background p-4">
             <input type="checkbox" name="termsAccepted" required className="mt-1 size-4 accent-primary" />
-            <span>I agree to the terms and conditions.</span>
+            <span>We agree to the terms and conditions.</span>
           </label>
         </FormCard>
       </Container>

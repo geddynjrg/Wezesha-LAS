@@ -2,6 +2,7 @@
 
 import { assertGroupChairAccess } from '@/lib/group-application-access';
 import {
+  MAX_GROUP_MEMBERS,
   MIN_GROUP_MEMBERS,
   createMembershipSchema,
   sumMembershipCounts,
@@ -50,6 +51,17 @@ export async function saveMembershipAction(
       success: false as const,
       errors: {
         totalFemales: [`Group must have at least ${MIN_GROUP_MEMBERS} members.`],
+      },
+    };
+  }
+
+  if (totalMembers > MAX_GROUP_MEMBERS) {
+    return {
+      success: false as const,
+      errors: {
+        totalFemales: [
+          `Group must not have more than ${MAX_GROUP_MEMBERS} members for Wezesha Majuu (MSEA shows ${totalMembers}).`,
+        ],
       },
     };
   }

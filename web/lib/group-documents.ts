@@ -133,56 +133,5 @@ export async function validateGroupDocumentsReady(applicationId: string) {
     };
   }
 
-  const errors: Record<string, string[]> = {};
-  const documents = application.documents;
-
-  function countDocs(category: UploadCategory, memberIdNo?: string) {
-    return documents.filter((document) => {
-      if (document.category !== category) {
-        return false;
-      }
-
-      if (!memberIdNo) {
-        return true;
-      }
-
-      return document.storagePath.includes(memberStorageToken(memberIdNo));
-    }).length;
-  }
-
-  if (countDocs(GROUP_DOCUMENT_CATEGORIES.kraPin) < 1) {
-    errors.kraPin = ['Group KRA PIN Certificate is required'];
-  }
-
-  if (countDocs(GROUP_DOCUMENT_CATEGORIES.registrationCert) < 1) {
-    errors.registrationCert = ['Registration Certificate is required'];
-  }
-
-  if (countDocs(GROUP_DOCUMENT_CATEGORIES.expressionOfInterest) < 1) {
-    errors.expressionOfInterest = ['Expression of Interest document is required'];
-  }
-
-  for (const member of application.members) {
-    const idKey = `memberId_${member.id}`;
-    const passportKey = `memberPassport_${member.id}`;
-    const pinKey = `memberPin_${member.id}`;
-
-    if (countDocs(GROUP_DOCUMENT_CATEGORIES.memberId, member.idNo) < 1) {
-      errors[idKey] = [`National ID for ${member.name} is required`];
-    }
-
-    if (countDocs(GROUP_DOCUMENT_CATEGORIES.memberPassport, member.idNo) < 1) {
-      errors[passportKey] = [`Passport for ${member.name} is required`];
-    }
-
-    if (countDocs(GROUP_DOCUMENT_CATEGORIES.memberPin, member.idNo) < 1) {
-      errors[pinKey] = [`KRA PIN Certificate for ${member.name} is required`];
-    }
-  }
-
-  if (Object.keys(errors).length > 0) {
-    return { ok: false as const, errors };
-  }
-
   return { ok: true as const, application };
 }

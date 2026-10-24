@@ -31,6 +31,12 @@ export const ASSISTIVE_FAQ: FaqEntry[] = [
       'After group and individual submission, officers review your file (constituency → HQ → accounts → attestation → offer). Open My applications / your individual dashboard for the latest status wording. SMS alerts may also notify you at key milestones when configured.',
   },
   {
+    id: 'neaims',
+    keywords: ['neaims', 'nea', 'placement', 'jobseeker', 'agency', 'recruitment agent'],
+    answer:
+      'A job placement must exist for every job seeker. National ID is checked on NEAIMS Jobseeker Placements. If a placement exists, matching recruitment fields are filled and locked. If none exists, the group or individual application cannot continue.',
+  },
+  {
     id: 'visa-training',
     keywords: ['visa', 'training', 'flight', 'destination', 'pre-departure', 'agency'],
     answer:

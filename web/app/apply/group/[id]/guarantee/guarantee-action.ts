@@ -3,9 +3,11 @@
 import { assertGroupChairAccess } from '@/lib/group-application-access';
 import { updateGroupProgress } from '@/lib/data/applications';
 import {
-  buildGuaranteeConsentMessage,
-  sendSms,
-} from '@/lib/sms/sms.service';
+  buildGuaranteeConsentUrl,
+  createGuaranteeConsentToken,
+} from '@/lib/guarantee-consent-token';
+import { notifyApplicationStatusChannels } from '@/lib/notify/notify-application-status';
+import { buildGuaranteeConsentMessage } from '@/lib/sms/sms.service';
 import { prisma } from '@/lib/prisma';
 import { resolveFormData } from '@/lib/resolve-form-data';
 import { redirect } from 'next/navigation';
@@ -32,47 +34,81 @@ export async function requestGuaranteeConsentAction(applicationId: string) {
   }
 
   const groupName = application.groupData?.groupName?.trim() || 'your group';
-  const membersWithMobile = application.members.filter((member) => member.mobile?.trim());
+  const members = application.members.filter(
+    (member) => member.mobile?.trim() || member.email?.trim(),
+  );
 
-  if (membersWithMobile.length === 0) {
+  if (members.length === 0) {
     return {
       success: false as const,
-      message: 'No members with phone numbers found.',
+      message: 'No members with phone numbers or email addresses found.',
     };
   }
 
   const failures: string[] = [];
+  let sentCount = 0;
 
-  for (const member of membersWithMobile) {
+  for (const member of members) {
+    // Skip members who already consented — no need to re-request
+    if (member.signature?.trim().toLowerCase() === 'accepted') {
+      continue;
+    }
+
+    const token = createGuaranteeConsentToken({
+      memberId: member.id,
+      applicationId,
+    });
+    const consentUrl = buildGuaranteeConsentUrl(token);
     const message = buildGuaranteeConsentMessage({
       memberName: member.name,
       groupName,
+      consentUrl,
     });
 
-    const result = await sendSms(member.mobile, message);
-    if (!result.success) {
+    const channels = await notifyApplicationStatusChannels({
+      recipient: {
+        name: member.name,
+        phone: member.mobile,
+        email: member.email,
+      },
+      title: 'Uwezo Fund — Guarantee consent request',
+      emailSubject: `Consent required: ${groupName} loan repayment commitment`,
+      message,
+    });
+
+    if (!channels.sms && !channels.email && !channels.app) {
       failures.push(member.name);
+    } else {
+      sentCount += 1;
     }
   }
 
-  if (failures.length === membersWithMobile.length) {
+  if (sentCount === 0 && failures.length === 0) {
+    return {
+      success: true as const,
+      message: 'All members have already consented. Signed toggles should already be on.',
+    };
+  }
+
+  if (failures.length === members.length || (sentCount === 0 && failures.length > 0)) {
     return {
       success: false as const,
       message:
-        'Failed to send consent requests. Please verify member phone numbers and try again.',
+        'Failed to send consent requests via SMS, email, or Uwezo App. Please verify member contacts and try again.',
     };
   }
 
   if (failures.length > 0) {
     return {
       success: true as const,
-      message: `Consent requests sent. Failed for: ${failures.join(', ')}.`,
+      message: `Consent requests sent via SMS, email, and Uwezo App where possible. Failed for: ${failures.join(', ')}.`,
     };
   }
 
   return {
     success: true as const,
-    message: 'Consent requests sent successfully to all members.',
+    message:
+      'Consent requests sent via SMS, email, and Uwezo App. Members should open the link and tap “I consent”.',
   };
 }
 
@@ -98,11 +134,17 @@ export async function saveGuaranteeAction(
 
   for (const member of members) {
     const signed = isMemberSigned(formData, member.id);
+    const existing = member.signature?.trim().toLowerCase();
 
     await prisma.groupMember.update({
       where: { id: member.id },
       data: {
-        signature: signed ? 'accepted' : null,
+        // Preserve remote decline unless chair explicitly toggled on
+        signature: signed
+          ? 'accepted'
+          : existing === 'declined'
+            ? 'declined'
+            : null,
       },
     });
   }

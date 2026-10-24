@@ -1,5 +1,4 @@
 import type { MseaPartner } from '@/lib/msea';
-import { MIN_GROUP_MEMBERS } from '@/lib/constants/group-membership';
 import {
   emptyClientMemberRow,
   toClientMemberRow,
@@ -9,7 +8,7 @@ import {
 export type MemberSlot = ClientMemberRow;
 
 export function resolveMemberSlotCount(membershipTotal?: number | null): number {
-  return Math.max(membershipTotal ?? 0, MIN_GROUP_MEMBERS);
+  return Math.max(membershipTotal ?? 0, 0);
 }
 
 export function buildMemberSlots(
@@ -20,7 +19,6 @@ export function buildMemberSlots(
     mobile?: string | null;
     email?: string | null;
     passportNo?: string | null;
-    purpose?: string | null;
     amount?: unknown;
   }>,
   mseaPartners?: MseaPartner[],

@@ -41,7 +41,7 @@ export const KenyanPhoneInput: FC<KenyanPhoneInputProps> = ({
         type="tel"
         inputMode="tel"
         autoComplete="tel"
-        placeholder="07XX XXX XXX"
+        placeholder="07XX XXX XXX or 01XX XXX XXX"
         value={display}
         onValueChange={handleChange}
       />

@@ -1,8 +1,6 @@
 import {
   MAX_GROUP_LOAN_TOTAL_MESSAGE,
   MAX_GROUP_MEMBER_LOAN_TOTAL,
-  MAX_MEMBER_LOAN_AMOUNT,
-  MAX_MEMBER_LOAN_AMOUNT_MESSAGE,
 } from '@/lib/adjust-loan-amounts';
 import { z } from 'zod';
 
@@ -12,8 +10,7 @@ export function createLoanAmountSchema(memberIds: string[]) {
   for (const memberId of memberIds) {
     shape[`amount_${memberId}`] = z.coerce
       .number({ message: 'Loan amount is required' })
-      .min(1, 'Loan amount is required')
-      .max(MAX_MEMBER_LOAN_AMOUNT, MAX_MEMBER_LOAN_AMOUNT_MESSAGE);
+      .min(1, 'Loan amount is required');
   }
 
   return z.object(shape).superRefine((data, ctx) => {

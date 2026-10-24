@@ -147,7 +147,11 @@ export async function assertIndividualEditable(memberId: string) {
     throw new Error('Application not found');
   }
   if (!isIndividualApplicationEditable(app)) {
-    throw new Error('This application has been submitted and can no longer be edited.');
+    const canFinishProfile =
+      app.exitedCountry && app.loanAmountApproved && !app.offerLetterSignedAt;
+    if (!canFinishProfile) {
+      throw new Error('This application has been submitted and can no longer be edited.');
+    }
   }
   return app;
 }
